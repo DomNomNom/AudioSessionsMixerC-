@@ -7,8 +7,8 @@
 #include "AudioSessionsMixerC++.h"
 #include "AudioSessionsMixerC++Dlg.h"
 #include "afxdialogex.h"
-#include<string>
-#include<TlHelp32.h>
+#include <string>
+#include <TlHelp32.h>
 #include <utility>
 #include <WinUser.h>
 
@@ -64,7 +64,7 @@ std::wstring GetProcName(DWORD aPid)
 	HANDLE processesSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (processesSnapshot == INVALID_HANDLE_VALUE)
 	{
-	//	std::wcout << "can't get a process snapshot ";
+		//	std::wcout << "can't get a process snapshot ";
 		return 0;
 	}
 
@@ -72,13 +72,13 @@ std::wstring GetProcName(DWORD aPid)
 	{
 		if (aPid == processInfo.th32ProcessID)
 		{
-		//	std::wcout << "found running process: " << processInfo.szExeFile;
+			//	std::wcout << "found running process: " << processInfo.szExeFile;
 			CloseHandle(processesSnapshot);
 			return processInfo.szExeFile;
 		}
 
 	}
-//	std::wcout << "no process with given pid" << aPid;
+	//	std::wcout << "no process with given pid" << aPid;
 	CloseHandle(processesSnapshot);
 	return std::wstring();
 }
@@ -122,12 +122,12 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// Dialog Data
+	// Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ABOUTBOX };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 // Implementation
@@ -156,10 +156,10 @@ CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_AUDIOSESSIONSMIXERC_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-	 pswSession = NULL;
+	pswSession = NULL;
 
-	 pSessionList = NULL;
-	 pSessionControl = NULL;
+	pSessionList = NULL;
+	pSessionControl = NULL;
 }
 
 void CAudioSessionsMixerCDlg::DoDataExchange(CDataExchange* pDX)
@@ -215,15 +215,15 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 
 
 	// TODO: Add extra initialization here
-	m_SldrAudSessionVol.SetRange(-100,0,TRUE);
+	m_SldrAudSessionVol.SetRange(-100, 0, TRUE);
 	m_SldrAudSessionVol.SetTicFreq(1);
 	m_SldrAudSessionVol.SetPos(0);
-	
-	
+
+
 	createSessionManager();
-	
+
 	EnumSessions();
-	
+
 	if (m_AudioSessionList.size() > 0)
 		initCmbWithAudSessionName();
 
@@ -308,33 +308,33 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 		// Get the <n>th session.
 		CHECK_HR(hr = pSessionList->GetSession(index, &sessionObj->pSessionControl));
 
-//		pSessionControl->AddRef();
-		  // Get the extended session control interface pointer.
+		//		pSessionControl->AddRef();
+				  // Get the extended session control interface pointer.
 		CHECK_HR(hr = sessionObj->pSessionControl->QueryInterface(
-			__uuidof(IAudioSessionControl2), (void**)& sessionObj->pSessionControl2));
+			__uuidof(IAudioSessionControl2), (void**)&sessionObj->pSessionControl2));
 
 		//get session volume control
-		CHECK_HR(hr =sessionObj->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
-													(void**)& sessionObj->pSessionVolumeCtrl));
+		CHECK_HR(hr = sessionObj->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
+			(void**)&sessionObj->pSessionVolumeCtrl));
 
 		float volf = 0.0;
 		sessionObj->pSessionVolumeCtrl->GetMasterVolume(&volf);
-		sessionObj->volume = int(100*volf);
-//		pSessionManager->GetSimpleAudioVolume(, false, &sessionObj->pSessionVolumeCtrl);
+		sessionObj->volume = int(100 * volf);
+		//		pSessionManager->GetSimpleAudioVolume(, false, &sessionObj->pSessionVolumeCtrl);
 
 
-		//apps session name is empty volume mixer shows process name 
-		//CHECK_HR(hr = pSessionControl->GetDisplayName(&pswSession));
-		//wprintf_s(L"Session Name: %s\n", pswSession);
+				//apps session name is empty volume mixer shows process name 
+				//CHECK_HR(hr = pSessionControl->GetDisplayName(&pswSession));
+				//wprintf_s(L"Session Name: %s\n", pswSession);
 
-		//so getting process id and then its name for reference of its session
+				//so getting process id and then its name for reference of its session
 		DWORD id = NULL;
 		CHECK_HR(hr = sessionObj->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
 //		TRACE("%d\n",id);
 
 		//for full path of app
-		sessionObj->exeFileName =CString(ProcessIdToName(id).c_str());
+		sessionObj->exeFileName = CString(ProcessIdToName(id).c_str());
 
 		//app exe name only
 		sessionObj->exeName = CString(GetProcName(id).c_str());
@@ -356,8 +356,8 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 
 void CAudioSessionsMixerCDlg::initCmbWithAudSessionName()
 {
-	for(int i=0; i<m_AudioSessionList.size();i++)
-	m_CmbAudioSession.AddString(m_AudioSessionList[i].exeName);
+	for (int i = 0; i < m_AudioSessionList.size(); i++)
+		m_CmbAudioSession.AddString(m_AudioSessionList[i].exeName);
 }
 
 void CAudioSessionsMixerCDlg::changeSelectedAudioSessionVol(UINT vol)
@@ -368,14 +368,14 @@ void CAudioSessionsMixerCDlg::changeSelectedAudioSessionVol(UINT vol)
 	else
 		return;
 
-	if(str!="")
-	for (int i = 0; i < m_AudioSessionList.size(); i++)
-		if (str.Compare(m_AudioSessionList[i].exeName) == 0)
-		{
-			float value = float(vol )/ 100.0;
-			m_AudioSessionList[i].pSessionVolumeCtrl->SetMasterVolume(value,NULL);
-			break;
-		}
+	if (str != "")
+		for (int i = 0; i < m_AudioSessionList.size(); i++)
+			if (str.Compare(m_AudioSessionList[i].exeName) == 0)
+			{
+				float value = float(vol) / 100.0;
+				m_AudioSessionList[i].pSessionVolumeCtrl->SetMasterVolume(value, NULL);
+				break;
+			}
 }
 
 void CAudioSessionsMixerCDlg::createSessionManager()
@@ -390,7 +390,7 @@ void CAudioSessionsMixerCDlg::createSessionManager()
 		__uuidof(MMDeviceEnumerator),
 		NULL, CLSCTX_ALL,
 		__uuidof(IMMDeviceEnumerator),
-		(void**)& pEnumerator));
+		(void**)&pEnumerator));
 
 	// Get the default audio device.
 	CHECK_HR(hr = pEnumerator->GetDefaultAudioEndpoint(
@@ -399,7 +399,7 @@ void CAudioSessionsMixerCDlg::createSessionManager()
 	// Get the session manager.
 	CHECK_HR(hr = pDevice->Activate(
 		__uuidof(IAudioSessionManager2), CLSCTX_ALL,
-		NULL, (void**)& pSessionManager));
+		NULL, (void**)&pSessionManager));
 
 }
 
@@ -425,13 +425,13 @@ void CAudioSessionsMixerCDlg::OnCbnSelchangeComboAudsession()
 {
 	// TODO: Add your control notification handler code here
 	CString str = L"";
-	m_CmbAudioSession.GetLBText(m_CmbAudioSession.GetCurSel(),str);
+	m_CmbAudioSession.GetLBText(m_CmbAudioSession.GetCurSel(), str);
 	TRACE(str);
 	for (int i = 0; i < m_AudioSessionList.size(); i++)
 		if (str.Compare(m_AudioSessionList[i].exeName) == 0)
 		{
 			m_SldrAudSessionVol.ClearSel();
-			m_SldrAudSessionVol.SetPos(-1*m_AudioSessionList[i].volume);
+			m_SldrAudSessionVol.SetPos(-1 * m_AudioSessionList[i].volume);
 			break;
 		}
 
@@ -445,7 +445,7 @@ void CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol(NMHDR* p
 	// The symbol _WIN32_WINNT must be >= 0x0600.
 	NMTRBTHUMBPOSCHANGING* pNMTPC = reinterpret_cast<NMTRBTHUMBPOSCHANGING*>(pNMHDR);
 	// TODO: Add your control notification handler code here
-	
+
 
 
 	*pResult = 0;
@@ -462,7 +462,7 @@ void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pSc
 	if (pSlider == &m_SldrAudSessionVol)
 	{
 		int vol = -1 * m_SldrAudSessionVol.GetPos();
-		changeSelectedAudioSessionVol( vol );
+		changeSelectedAudioSessionVol(vol);
 	}
 
 	CDialogEx::OnVScroll(nSBCode, nPos, pScrollBar);
