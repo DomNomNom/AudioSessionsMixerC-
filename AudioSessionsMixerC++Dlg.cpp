@@ -362,20 +362,10 @@ void CAudioSessionsMixerCDlg::initCmbWithAudSessionName()
 
 void CAudioSessionsMixerCDlg::changeSelectedAudioSessionVol(UINT vol)
 {
-	CString str = L"";
-	if (m_CmbAudioSession.GetCurSel() > -1)
-		m_CmbAudioSession.GetLBText(m_CmbAudioSession.GetCurSel(), str);
-	else
-		return;
-
-	if (str != "")
-		for (int i = 0; i < m_AudioSessionList.size(); i++)
-			if (str.Compare(m_AudioSessionList[i].exeName) == 0)
-			{
-				float value = float(vol) / 100.0;
-				m_AudioSessionList[i].pSessionVolumeCtrl->SetMasterVolume(value, NULL);
-				break;
-			}
+	int sel = m_CmbAudioSession.GetCurSel();
+	if (sel < 0) return;
+	float value = float(vol) / 100.0;
+	m_AudioSessionList[sel].pSessionVolumeCtrl->SetMasterVolume(value, NULL);
 }
 
 void CAudioSessionsMixerCDlg::createSessionManager()
@@ -423,19 +413,10 @@ void CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1(NMHDR* pNMHDR, LRESULT* pRes
 
 void CAudioSessionsMixerCDlg::OnCbnSelchangeComboAudsession()
 {
-	// TODO: Add your control notification handler code here
-	CString str = L"";
-	m_CmbAudioSession.GetLBText(m_CmbAudioSession.GetCurSel(), str);
-	TRACE(str);
-	for (int i = 0; i < m_AudioSessionList.size(); i++)
-		if (str.Compare(m_AudioSessionList[i].exeName) == 0)
-		{
-			m_SldrAudSessionVol.ClearSel();
-			m_SldrAudSessionVol.SetPos(-1 * m_AudioSessionList[i].volume);
-			break;
-		}
-
-
+	int sel = m_CmbAudioSession.GetCurSel();
+	m_SldrAudSessionVol.ClearSel();
+	if (sel < 0) return;
+	m_SldrAudSessionVol.SetPos(-1 * m_AudioSessionList[sel].volume);
 }
 
 
