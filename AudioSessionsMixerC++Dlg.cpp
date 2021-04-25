@@ -374,7 +374,6 @@ void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int pref
 }
 
 void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
-	int i = 0;
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		const Slider& slider = sliders[i];
 		CSliderCtrl& sliderControl = sliderControls[i];
@@ -499,7 +498,6 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 		DWORD id = NULL;
 		CHECK_HR(hr = sessionObj->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
-//		TRACE("%d\n",id);
 
 		//for full path of app
 		sessionObj->exeFileName = CString(ProcessIdToName(id).c_str());
@@ -514,12 +512,8 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 		//HWND hwndo = NULL;//;
 		//int i=GetWindowTextA(GetWindowHandleFromProcessID(id), LPSTR(str.GetString()), NULL);
 
-
 	}
-
-
 	return hr;
-
 }
 
 void CAudioSessionsMixerCDlg::initCmbWithAudSessionName()
@@ -573,7 +567,6 @@ void CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1(NMHDR* pNMHDR, LRESULT* pRes
 {
 	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
 	// TODO: Add your control notification handler code here
-
 
 	*pResult = 0;
 }
