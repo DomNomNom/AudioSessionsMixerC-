@@ -359,9 +359,15 @@ void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int pref
 	if (sliders[preferredIndex].label == label) return;
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		if (sliders[i].label != label) continue;
+
+		// swap
 		Slider tmp = sliders[preferredIndex];
 		sliders[preferredIndex] = sliders[i];
 		sliders[i] = tmp;
+
+		// notify that we've done an update on these.
+		sliders[i].systemUpdateTime = time(0);
+		sliders[preferredIndex].systemUpdateTime = sliders[i].systemUpdateTime;
 		return;
 	}
 	TRACE("Preferred label not found %s", label);
