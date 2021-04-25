@@ -16,6 +16,9 @@
 #define new DEBUG_NEW
 #endif
 
+#define SLIDER_CONTROL_BASE_ID 2000
+#define STATIC_CONTROL_BASE_ID 3000
+
 
 
 //////////////////////////////////////
@@ -167,6 +170,11 @@ void CAudioSessionsMixerCDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_COMBO_AUDSESSION, m_CmbAudioSession);
 	DDX_Control(pDX, IDC_SLIDER_AUDSESSION_VOL, m_SldrAudSessionVol);
+	int i = 0;
+	for (CSliderCtrl& slider : sliderControls) {
+		DDX_Control(pDX, SLIDER_CONTROL_BASE_ID + i, slider);
+		i += 1;
+	}
 }
 
 BEGIN_MESSAGE_MAP(CAudioSessionsMixerCDlg, CDialogEx)
@@ -182,12 +190,42 @@ END_MESSAGE_MAP()
 
 // CAudioSessionsMixerCDlg message handlers
 
+
 BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 {
+	{
+		const int WD = 100;  // Width of each slider column
+		const int TEXT_BOTTOM = 50;
+		int i = 0;
+		for (CSliderCtrl& slider : sliderControls) {
+			slider.Create(WS_CHILD | WS_VISIBLE | TBS_VERT, CRect(i * WD, TEXT_BOTTOM, (i + 1) * WD, 280), this, i + SLIDER_CONTROL_BASE_ID);
+			slider.SetPos(0);
+			//slider.orientation/
+			//slider.SetTicFreq(100);
+			i += 1;
+		}
+		i = 0;
+		for (CStatic& textControl : textControls) {
+			CString txt;
+			txt.Format(L"HI %d", i);
+			textControl.Create(txt, WS_CHILD | WS_VISIBLE, CRect(i * WD, 10, (i + 1) * WD, TEXT_BOTTOM), this, STATIC_CONTROL_BASE_ID);
+			//std::string txt = "hi ";
+			txt.Format(L"Ho2\n %d", i);
+			textControl.SetWindowTextW(txt);
+			i += 1;
+		}
+	}
 	CDialogEx::OnInitDialog();
 
-	CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	//DWORD style = GetWindowLong(m_SldrAudSessionVol, GWL_STYLE);
+	//for (CSliderCtrl& slider : sliderControls) {
+	//	SetWindowLong(slider, GWL_STYLE, style);
+	//}
+	SetWindowLong(m_SldrAudSessionVol, GWL_STYLE, 0); // hide
+	SetWindowLong(m_CmbAudioSession, GWL_STYLE, 0); // hide
 
+
+	CoInitializeEx(NULL, COINIT_MULTITHREADED);
 	// Add "About..." menu item to system menu.
 
 	// IDM_ABOUTBOX must be in the system command range.
@@ -426,7 +464,6 @@ void CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol(NMHDR* p
 	// The symbol _WIN32_WINNT must be >= 0x0600.
 	NMTRBTHUMBPOSCHANGING* pNMTPC = reinterpret_cast<NMTRBTHUMBPOSCHANGING*>(pNMHDR);
 	// TODO: Add your control notification handler code here
-
 
 
 	*pResult = 0;

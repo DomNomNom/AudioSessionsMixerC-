@@ -7,26 +7,28 @@
 #include"CAudioSession.h"
 #include<vector>
 
+#define SLIDER_COUNT 8
+
 // CAudioSessionsMixerCDlg dialog
 class CAudioSessionsMixerCDlg : public CDialogEx
 {
-// Construction
+	// Construction
 public:
 	CAudioSessionsMixerCDlg(CWnd* pParent = nullptr);	// standard constructor
 	~CAudioSessionsMixerCDlg();
-// Dialog Data
+	// Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_AUDIOSESSIONSMIXERC_DIALOG };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 public:
 
 	LPWSTR pswSession;
 
 	IAudioSessionEnumerator* pSessionList;
-	IAudioSessionControl*	 pSessionControl;
+	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	IAudioSessionManager2* pSessionManager;
 
@@ -37,7 +39,7 @@ public:
 
 	std::vector<CAudioSession> m_AudioSessionList;
 
-// Implementation
+	// Implementation
 protected:
 	HICON m_hIcon;
 
@@ -54,4 +56,7 @@ public:
 	CSliderCtrl m_SldrAudSessionVol;
 	afx_msg void OnTRBNThumbPosChangingSliderAudsessionVol(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+
+	CSliderCtrl sliderControls[SLIDER_COUNT];
+	CStatic textControls[SLIDER_COUNT];
 };

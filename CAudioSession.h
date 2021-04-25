@@ -28,5 +28,6 @@ public:
 	ISimpleAudioVolume* pSessionVolumeCtrl;
 
 	UINT volume;
+	// TODO: time updated
 };
 
