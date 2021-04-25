@@ -207,7 +207,7 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 		int i = 0;
 		for (CSliderCtrl& slider : sliderControls) {
 			slider.Create(WS_CHILD | WS_VISIBLE | TBS_VERT, CRect(i * WD, TEXT_BOTTOM, (i + 1) * WD, 280), this, SLIDER_CONTROL_BASE_ID + i);
-			slider.SetPos(0);
+			slider.SetRange(0, 1000);
 			i += 1;
 		}
 		i = 0;
@@ -610,7 +610,9 @@ void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 		CHECK_HR(hr = session.pSessionControl2->GetSessionInstanceIdentifier(&sid));
 		if (wcscmp(slider.sid, sid)) continue;
 
-		TRACE("volumeIntent: %f %ls\n", slider.volumeIntent, slider.label);
+		//TRACE("volumeIntent: %f %ls\n", slider.volumeIntent, slider.label);
+		session.pSessionVolumeCtrl->SetMasterVolume(slider.volumeIntent, NULL);
+
 		return;
 	}
 	TRACE("OnVolumeIntent could not find corresponding session for slider %ls\n", slider.sid);
