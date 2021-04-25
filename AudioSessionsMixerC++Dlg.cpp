@@ -350,10 +350,21 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			sliders[i].systemUpdateTime = time(0);
 		}
 	}
+
+	SwapSliderToPreferredIndex(L"explorer", 0);
+	SwapSliderToPreferredIndex(L"firefox", 1);
 }
 
 void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int preferredIndex) {
-	//if (sliders[preferredIndex])
+	if (sliders[preferredIndex].label == label) return;
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		if (sliders[i].label != label) continue;
+		Slider tmp = sliders[preferredIndex];
+		sliders[preferredIndex] = sliders[i];
+		sliders[i] = tmp;
+		return;
+	}
+	TRACE("Preferred label not found %s", label);
 }
 
 void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
