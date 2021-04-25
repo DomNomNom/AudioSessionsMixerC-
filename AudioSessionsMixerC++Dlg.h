@@ -37,6 +37,7 @@ public:
 	HRESULT EnumSessions();
 	void initCmbWithAudSessionName();
 	void changeSelectedAudioSessionVol(UINT vol);
+	void UpdateSlidersFromSessions();
 
 	std::vector<CAudioSession> m_AudioSessionList;
 
@@ -52,11 +53,11 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnNMCustomdrawSlider1(NMHDR* pNMHDR, LRESULT* pResult);
-	CComboBox m_CmbAudioSession;
 	afx_msg void OnCbnSelchangeComboAudsession();
-	CSliderCtrl m_SldrAudSessionVol;
 	afx_msg void OnTRBNThumbPosChangingSliderAudsessionVol(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	CComboBox m_CmbAudioSession;
+	CSliderCtrl m_SldrAudSessionVol;
 
 	CSliderCtrl sliderControls[SLIDER_COUNT];
 	CStatic textControls[SLIDER_COUNT];

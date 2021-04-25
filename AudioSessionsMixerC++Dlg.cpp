@@ -165,6 +165,9 @@ CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
 	pSessionControl = NULL;
 	pSessionControl2 = NULL;
 	pSessionManager = NULL;
+	for (Slider& slider : sliders) {
+		slider.connected = false;
+	}
 }
 
 void CAudioSessionsMixerCDlg::DoDataExchange(CDataExchange* pDX)
@@ -184,8 +187,10 @@ BEGIN_MESSAGE_MAP(CAudioSessionsMixerCDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_CBN_SELCHANGE(IDC_COMBO_AUDSESSION, &CAudioSessionsMixerCDlg::OnCbnSelchangeComboAudsession)
-#pragma warning(suppress : C26454) ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1)
-#pragma warning(suppress : C26454) ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol)
+#pragma warning(suppress : 26454) 
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1)
+#pragma warning(suppress : 26454) 
+	ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol)
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
@@ -261,8 +266,78 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	if (m_AudioSessionList.size() > 0)
 		initCmbWithAudSessionName();
 
+	UpdateSlidersFromSessions();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+void CAudioSessionsMixerCDlg::UpdateSlidersFromSessions() {
+	bool stillConnected[SLIDER_COUNT];
+	for (int i = 0; i < SLIDER_COUNT; ++i) stillConnected[i] = false;
+
+	for (const CAudioSession& session : m_AudioSessionList) {
+		DWORD pid = NULL;
+		int hr;
+		CHECK_HR(hr = session.pSessionControl2->GetProcessId(&pid));
+		LPWSTR sid;
+		CHECK_HR(hr = session.pSessionControl2->GetSessionInstanceIdentifier(&sid));
+
+		bool isUpdate = false;  // Whether we should override the current slider drag position.
+
+		// Scan through sliders to find one with matching ID
+		Slider* slider = NULL;
+		for (int i = 0; i < SLIDER_COUNT; ++i) {
+			if (sliders[i].connected && wcscmp(sliders[i].sid, sid) == 0) {
+				slider = &(sliders[i]);
+				stillConnected[i] = true;
+				break;
+			}
+		}
+
+		// No matching one? Find a free slot.
+		if (slider == NULL) {
+			for (int i = 0; i < SLIDER_COUNT; ++i) {
+				if (!sliders[i].connected) {
+					isUpdate = true;
+					slider = &(sliders[i]);
+					stillConnected[i] = true;
+					break;
+				}
+			}
+		}
+
+		// No free slot? Too bad. Ignore it.
+		if (slider == NULL) {
+			TRACE("Out of sliders for %ls\n", sid);
+			continue;
+		}
+
+		LPWSTR label;
+		CHECK_HR(hr = session.pSessionControl2->GetDisplayName(&label));
+		if (wcscmp(slider->label, label)) isUpdate = true;
+
+		float volumeFromSystem;
+		BOOL mute;
+		CHECK_HR(hr = session.pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
+		CHECK_HR(hr = session.pSessionVolumeCtrl->GetMute(&mute));
+		if (mute) volumeFromSystem = 0;
+		if (slider->volumeFromSystem != volumeFromSystem) isUpdate = true;
+
+		slider->connected = true;
+		slider->sid = sid;
+		slider->label = label;
+		slider->volumeFromSystem = volumeFromSystem;
+		if (isUpdate) {
+			slider->systemUpdateTime = time(0);
+		}
+	}
+
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		if (!stillConnected[i]) {
+			sliders[i].connected = false;
+			sliders[i].systemUpdateTime = time(0);
+		}
+	}
 }
 
 void CAudioSessionsMixerCDlg::OnSysCommand(UINT nID, LPARAM lParam)
