@@ -200,29 +200,21 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 		const int TEXT_BOTTOM = 50;
 		int i = 0;
 		for (CSliderCtrl& slider : sliderControls) {
-			slider.Create(WS_CHILD | WS_VISIBLE | TBS_VERT, CRect(i * WD, TEXT_BOTTOM, (i + 1) * WD, 280), this, i + SLIDER_CONTROL_BASE_ID);
+			slider.Create(WS_CHILD | WS_VISIBLE | TBS_VERT, CRect(i * WD, TEXT_BOTTOM, (i + 1) * WD, 280), this, SLIDER_CONTROL_BASE_ID + i);
 			slider.SetPos(0);
-			//slider.orientation/
-			//slider.SetTicFreq(100);
 			i += 1;
 		}
 		i = 0;
 		for (CStatic& textControl : textControls) {
 			CString txt;
-			txt.Format(L"HI %d", i);
-			textControl.Create(txt, WS_CHILD | WS_VISIBLE, CRect(i * WD, 10, (i + 1) * WD, TEXT_BOTTOM), this, STATIC_CONTROL_BASE_ID);
-			//std::string txt = "hi ";
-			txt.Format(L"Ho2\n %d", i);
+			txt.Format(L"Slider %d", i);
+			textControl.Create(txt, WS_CHILD | WS_VISIBLE, CRect(i * WD, 10, (i + 1) * WD, TEXT_BOTTOM), this, STATIC_CONTROL_BASE_ID + 1);
 			textControl.SetWindowTextW(txt);
 			i += 1;
 		}
 	}
 	CDialogEx::OnInitDialog();
 
-	//DWORD style = GetWindowLong(m_SldrAudSessionVol, GWL_STYLE);
-	//for (CSliderCtrl& slider : sliderControls) {
-	//	SetWindowLong(slider, GWL_STYLE, style);
-	//}
 	SetWindowLong(m_SldrAudSessionVol, GWL_STYLE, 0); // hide
 	SetWindowLong(m_CmbAudioSession, GWL_STYLE, 0); // hide
 
