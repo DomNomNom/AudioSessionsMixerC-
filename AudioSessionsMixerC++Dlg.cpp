@@ -203,7 +203,7 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 {
 	{	// Position the sliders and text box controls.
 		const int WD = 100;  // Width of each slider column
-		const int TEXT_BOTTOM = 50;
+		const int TEXT_BOTTOM = 100;
 		int i = 0;
 		for (CSliderCtrl& slider : sliderControls) {
 			slider.Create(WS_CHILD | WS_VISIBLE | TBS_VERT, CRect(i * WD, TEXT_BOTTOM, (i + 1) * WD, 280), this, SLIDER_CONTROL_BASE_ID + i);
@@ -267,13 +267,14 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	if (m_AudioSessionList.size() > 0)
 		initCmbWithAudSessionName();
 
-	UpdateSlidersFromSessions();
+	updateSlidersFromSessions();
+	updateControlsFromSliders();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
 
-void CAudioSessionsMixerCDlg::UpdateSlidersFromSessions() {
+void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 	bool stillConnected[SLIDER_COUNT];
 	for (int i = 0; i < SLIDER_COUNT; ++i) stillConnected[i] = false;
 
@@ -314,8 +315,14 @@ void CAudioSessionsMixerCDlg::UpdateSlidersFromSessions() {
 			continue;
 		}
 
-		LPWSTR label;
-		CHECK_HR(hr = session.pSessionControl2->GetDisplayName(&label));
+		CString label;
+		//CHECK_HR(hr = session.pSessionControl2->GetDisplayName(&label));
+		label = CString(GetProcName(pid).c_str());
+		if (label.GetLength() > 4) {
+			CString extension = label.Right(4);
+			if (extension == ".exe") label = label.Left(label.GetLength() - 4);
+		}
+
 		if (wcscmp(slider->label, label)) isUpdate = true;
 
 		float volumeFromSystem;
@@ -325,19 +332,52 @@ void CAudioSessionsMixerCDlg::UpdateSlidersFromSessions() {
 		if (mute) volumeFromSystem = 0;
 		if (slider->volumeFromSystem != volumeFromSystem) isUpdate = true;
 
+
 		slider->connected = true;
 		slider->sid = sid;
 		slider->label = label;
 		slider->volumeFromSystem = volumeFromSystem;
+		slider->vuMeter = 0; // TODO
 		if (isUpdate) {
 			slider->systemUpdateTime = time(0);
 		}
 	}
 
+	// TODO: maybe some smarts around checking to not reuse one that is being actively changed.
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		if (!stillConnected[i]) {
 			sliders[i].connected = false;
 			sliders[i].systemUpdateTime = time(0);
+		}
+	}
+}
+
+void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int preferredIndex) {
+	//if (sliders[preferredIndex])
+}
+
+void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
+	int i = 0;
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		const Slider& slider = sliders[i];
+		CSliderCtrl& sliderControl = sliderControls[i];
+		CStatic& textControl = textControls[i];
+
+		if (slider.connected) {
+			CString txt;
+			txt.Format(L"%ls\n\nvuMeter:\n%f", slider.label, slider.vuMeter);
+			textControl.SetWindowTextW(txt);
+
+			float volume = (slider.systemUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
+			int pos = int(volume * sliderControl.GetRangeMin() + (1.f - volume) * sliderControl.GetRangeMax());
+			TRACE("%ls %f $d", slider.label, volume, pos);
+			if (pos != sliderControl.GetPos()) {
+				sliderControl.SetPos(pos);
+			}
+		}
+		else {
+			textControl.SetWindowTextW(L"-");
+			sliderControl.SetPos(sliderControl.GetRangeMax());
 		}
 	}
 }
@@ -550,10 +590,10 @@ void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 	if (slider.systemUpdateTime >= slider.dragStartTime) {
 		TRACE("Ignoring user intent due to system change on slider %ls\n", slider.sid);
 		return;
-
 	}
-	// Scan through audio session to find one with matching sid
-	// TODO: Optimize by trying the lastest-changed index first
+
+	// Scan through audio sessions to find one with matching sid.
+	// TODO: Optimize by trying the lastest-changed index first.
 	for (CAudioSession session : m_AudioSessionList) {
 		LPWSTR sid;
 		int hr;
