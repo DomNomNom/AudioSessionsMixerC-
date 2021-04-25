@@ -68,7 +68,7 @@ std::wstring GetProcName(DWORD aPid)
 	if (processesSnapshot == INVALID_HANDLE_VALUE)
 	{
 		//	std::wcout << "can't get a process snapshot ";
-		return 0;
+		return std::wstring();
 	}
 
 	for (BOOL bok = Process32First(processesSnapshot, &processInfo); bok; bok = Process32Next(processesSnapshot, &processInfo))
@@ -163,6 +163,8 @@ CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
 
 	pSessionList = NULL;
 	pSessionControl = NULL;
+	pSessionControl2 = NULL;
+	pSessionManager = NULL;
 }
 
 void CAudioSessionsMixerCDlg::DoDataExchange(CDataExchange* pDX)
@@ -181,9 +183,9 @@ BEGIN_MESSAGE_MAP(CAudioSessionsMixerCDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1)
 	ON_CBN_SELCHANGE(IDC_COMBO_AUDSESSION, &CAudioSessionsMixerCDlg::OnCbnSelchangeComboAudsession)
-	ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol)
+#pragma warning(suppress : C26454) ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1)
+#pragma warning(suppress : C26454) ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol)
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
@@ -225,7 +227,9 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	SetWindowLong(m_CmbAudioSession, GWL_STYLE, 0); // hide
 
 
-	CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	int hr;
+	CHECK_HR(hr = CoInitializeEx(NULL, COINIT_MULTITHREADED));
+
 	// Add "About..." menu item to system menu.
 
 	// IDM_ABOUTBOX must be in the system command range.
@@ -402,7 +406,7 @@ void CAudioSessionsMixerCDlg::changeSelectedAudioSessionVol(UINT vol)
 {
 	int sel = m_CmbAudioSession.GetCurSel();
 	if (sel < 0) return;
-	float value = float(vol) / 100.0;
+	float value = float(vol) / 100.0f;
 	m_AudioSessionList[sel].pSessionVolumeCtrl->SetMasterVolume(value, NULL);
 }
 
