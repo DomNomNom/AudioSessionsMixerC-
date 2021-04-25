@@ -552,7 +552,6 @@ void CAudioSessionsMixerCDlg::createSessionManager()
 	CHECK_HR(hr = pDevice->Activate(
 		__uuidof(IAudioSessionManager2), CLSCTX_ALL,
 		NULL, (void**)&pSessionManager));
-
 }
 
 CAudioSessionsMixerCDlg::~CAudioSessionsMixerCDlg()
