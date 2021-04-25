@@ -191,6 +191,7 @@ BEGIN_MESSAGE_MAP(CAudioSessionsMixerCDlg, CDialogEx)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1)
 #pragma warning(suppress : 26454) 
 	ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol)
+
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
@@ -200,7 +201,7 @@ END_MESSAGE_MAP()
 
 BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 {
-	{
+	{	// Position the sliders and text box controls.
 		const int WD = 100;  // Width of each slider column
 		const int TEXT_BOTTOM = 50;
 		int i = 0;
@@ -271,6 +272,7 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
+
 void CAudioSessionsMixerCDlg::UpdateSlidersFromSessions() {
 	bool stillConnected[SLIDER_COUNT];
 	for (int i = 0; i < SLIDER_COUNT; ++i) stillConnected[i] = false;
@@ -308,7 +310,7 @@ void CAudioSessionsMixerCDlg::UpdateSlidersFromSessions() {
 
 		// No free slot? Too bad. Ignore it.
 		if (slider == NULL) {
-			TRACE("Out of sliders for %ls\n", sid);
+			TRACE("Out of sliders for sid %ls\n", sid);
 			continue;
 		}
 
@@ -536,19 +538,59 @@ void CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol(NMHDR* p
 	NMTRBTHUMBPOSCHANGING* pNMTPC = reinterpret_cast<NMTRBTHUMBPOSCHANGING*>(pNMHDR);
 	// TODO: Add your control notification handler code here
 
-
 	*pResult = 0;
 }
 
+void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
+
+	if (!slider.connected) {
+		TRACE("OnVolumeIntent should not be called with unconnected slider!");
+		return;
+	}
+	if (slider.systemUpdateTime >= slider.dragStartTime) {
+		TRACE("Ignoring user intent due to system change on slider %ls\n", slider.sid);
+		return;
+
+	}
+	// Scan through audio session to find one with matching sid
+	// TODO: Optimize by trying the lastest-changed index first
+	for (CAudioSession session : m_AudioSessionList) {
+		LPWSTR sid;
+		int hr;
+		CHECK_HR(hr = session.pSessionControl2->GetSessionInstanceIdentifier(&sid));
+		if (wcscmp(slider.sid, sid)) continue;
+
+		TRACE("volumeIntent: %f %ls\n", slider.volumeIntent, slider.label);
+		return;
+	}
+	TRACE("OnVolumeIntent could not find corresponding session for slider %ls\n", slider.sid);
+}
 
 void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	// TODO: Add your message handler code here and/or call default
 
-	CSliderCtrl* pSlider = reinterpret_cast<CSliderCtrl*>(pScrollBar);
+	CSliderCtrl* sliderControl = reinterpret_cast<CSliderCtrl*>(pScrollBar);
 
 	// Check which slider sent the notification  
-	if (pSlider == &m_SldrAudSessionVol)
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		if (sliderControl == &(sliderControls[i])) {
+			Slider& slider = sliders[i];
+			if (slider.connected) {
+				float volumeIntent = 1 - float(sliderControl->GetPos() - sliderControl->GetRangeMin()) / float(sliderControl->GetRangeMax() - sliderControl->GetRangeMin());
+				slider.volumeIntent = volumeIntent;
+				slider.dragStartTime = time(0);  // FIXME: This should only be set on mouse down.
+				OnVolumeIntent(slider);
+			}
+			else if (nPos != 0) {
+				sliderControl->ClearSel();
+				sliderControl->SetPos(sliderControl->GetRangeMax());
+			}
+			break;
+		}
+	}
+
+	if (sliderControl == &m_SldrAudSessionVol)
 	{
 		int vol = -1 * m_SldrAudSessionVol.GetPos();
 		changeSelectedAudioSessionVol(vol);
