@@ -19,15 +19,14 @@ public:
 	~CAudioSession();
 
 public:
-	CString exeName;
-	CString exeFileName;
 
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
-
 	ISimpleAudioVolume* pSessionVolumeCtrl;
 
+	// Deprecated derived things.
+	CString exeName;
+	CString exeFileName;
 	UINT volume;
-	// TODO: time updated
 };
 

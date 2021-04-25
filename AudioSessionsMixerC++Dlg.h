@@ -6,6 +6,7 @@
 
 #include"CAudioSession.h"
 #include<vector>
+#include "Slider.h"
 
 #define SLIDER_COUNT 8
 
@@ -59,4 +60,5 @@ public:
 
 	CSliderCtrl sliderControls[SLIDER_COUNT];
 	CStatic textControls[SLIDER_COUNT];
+	Slider sliders[SLIDER_COUNT];
 };
