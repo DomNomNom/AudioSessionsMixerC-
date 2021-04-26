@@ -361,6 +361,18 @@ void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int pref
 	TRACE("Preferred label not found %s", label);
 }
 
+
+void lazyUpdateTextControl(CStatic& textControl, const CString& txt) {
+	CString txt2;
+	textControl.GetWindowTextW(txt2);
+	if (txt == txt2) return;
+	textControl.SetWindowTextW(txt);
+}
+void lazyUpdateSliderControl(CSliderCtrl& sliderControl, int pos) {
+	if (pos == sliderControl.GetPos())return;
+	sliderControl.SetPos(pos);
+
+}
 void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		const Slider& slider = sliders[i];
@@ -370,20 +382,19 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 		if (slider.connected) {
 			CString txt;
 			txt.Format(L"%ls\n\nvuMeter:\n%f", slider.label, slider.vuMeter);
-			textControl.SetWindowTextW(txt);
+			lazyUpdateTextControl(textControl, txt);
 
 			float volume = (slider.systemUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
 			int pos = int(volume * sliderControl.GetRangeMin() + (1.f - volume) * sliderControl.GetRangeMax());
-			if (pos != sliderControl.GetPos()) {
-				sliderControl.SetPos(pos);
-			}
+			lazyUpdateSliderControl(sliderControl, pos);
 		}
 		else {
-			textControl.SetWindowTextW(L"-");
-			sliderControl.SetPos(sliderControl.GetRangeMax());
+			lazyUpdateTextControl(textControl, L"-");
+			lazyUpdateSliderControl(sliderControl, sliderControl.GetRangeMax());
 		}
 	}
 }
+
 
 void CAudioSessionsMixerCDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -522,7 +533,7 @@ CAudioSessionsMixerCDlg::~CAudioSessionsMixerCDlg()
 void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 
 	if (!slider.connected) {
-		TRACE("OnVolumeIntent should not be called with unconnected slider!");
+		TRACE("OnVolumeIntent should not be called with unconnected slider!\n");
 		return;
 	}
 	if (slider.systemUpdateTime >= slider.dragStartTime) {
