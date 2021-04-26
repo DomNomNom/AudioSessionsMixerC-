@@ -462,30 +462,16 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		CHECK_HR(hr = sessionObj->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
 			(void**)&sessionObj->pSessionVolumeCtrl));
 
-		float volf = 0.0;
-		sessionObj->pSessionVolumeCtrl->GetMasterVolume(&volf);
-		sessionObj->volume = int(100 * volf);
-		//		pSessionManager->GetSimpleAudioVolume(, false, &sessionObj->pSessionVolumeCtrl);
-
 
 		//so getting process id and then its name for reference of its session
 		DWORD id = NULL;
 		CHECK_HR(hr = sessionObj->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
-
-		//for full path of app
-		sessionObj->exeFileName = CString(ProcessIdToName(id).c_str());
-
-		//app exe name only
-		sessionObj->exeName = CString(GetProcName(id).c_str());
-
 		m_AudioSessionList.push_back(*sessionObj);
-
 
 		//CString str = L"";
 		//HWND hwndo = NULL;//;
 		//int i=GetWindowTextA(GetWindowHandleFromProcessID(id), LPSTR(str.GetString()), NULL);
-
 	}
 }
 
