@@ -5,6 +5,7 @@ CAudioSession::CAudioSession()
 {
 	pSessionControl = NULL;
 	pSessionControl2 = NULL;
+	sid = L"";
 }
 
 CAudioSession::~CAudioSession()

@@ -267,7 +267,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		CHECK_HR(hr = session->pSessionControl2->GetSessionInstanceIdentifier(&sid));
 		if (sid == NULL) continue;
 
-		bool isUpdate = false;  // Whether we should override the current slider drag position.
+		bool isSidUpdate = false;  // Whether we should override the current slider drag position.
 
 		// Scan through sliders to find one with matching ID
 		Slider* slider = NULL;
@@ -281,7 +281,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		if (slider == NULL) {
 			for (int i = 0; i < SLIDER_COUNT; ++i) {
 				if (!sliders[i].connected) {
-					isUpdate = true;
+					isSidUpdate = true;
 					slider = &(sliders[i]);
 					stillConnected[i] = true;
 					break;
@@ -307,35 +307,33 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			if (extension == ".exe") label = label.Left(label.GetLength() - 4);
 		}
 
-		if (wcscmp(slider->label, label)) isUpdate = true;
+		if (wcscmp(slider->label, label)) isSidUpdate = true;
 
 		float volumeFromSystem;
 		BOOL mute;
 		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
 		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMute(&mute));
 		if (mute) volumeFromSystem = 0;
-		if (slider->volumeFromSystem != volumeFromSystem) isUpdate = true;
 
 		if (label == "") {
 			TRACE("bad label: slider pid=%d sid=%ls len=%d", pid, sid);
 		}
 
 
+		if (slider->volumeFromSystem != volumeFromSystem) slider->systemVolumeUpdateTime = time(0);
+		if (isSidUpdate)slider->sidUpdateTime = time(0);
 		slider->connected = true;
 		slider->sid = sid;
 		slider->label = label;
 		slider->volumeFromSystem = volumeFromSystem;
 		slider->vuMeter = 0; // TODO
-		if (isUpdate) {
-			slider->systemUpdateTime = time(0);
-		}
 	}
 
 	// TODO: maybe some smarts around checking to not reuse one that is being actively changed.
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		if (!stillConnected[i]) {
 			sliders[i].connected = false;
-			sliders[i].systemUpdateTime = time(0);
+			sliders[i].sidUpdateTime = time(0);
 		}
 	}
 
@@ -354,8 +352,11 @@ void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int pref
 		sliders[i] = tmp;
 
 		// notify that we've done an update on these.
-		sliders[i].systemUpdateTime = time(0);
-		sliders[preferredIndex].systemUpdateTime = sliders[i].systemUpdateTime;
+		time_t t = time(0);
+		sliders[i].sidUpdateTime = t;
+		sliders[i].systemVolumeUpdateTime = t;
+		sliders[preferredIndex].sidUpdateTime = t;
+		sliders[preferredIndex].systemVolumeUpdateTime = t;
 		return;
 	}
 	TRACE("Preferred label not found %s", label);
@@ -384,7 +385,7 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 			txt.Format(L"%ls\n\nvuMeter:\n%f", slider.label, slider.vuMeter);
 			lazyUpdateTextControl(textControl, txt);
 
-			float volume = (slider.systemUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
+			float volume = (slider.systemVolumeUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
 			int pos = int(volume * sliderControl.GetRangeMin() + (1.f - volume) * sliderControl.GetRangeMax());
 			lazyUpdateSliderControl(sliderControl, pos);
 		}
@@ -536,7 +537,7 @@ void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 		TRACE("OnVolumeIntent should not be called with unconnected slider!\n");
 		return;
 	}
-	if (slider.systemUpdateTime >= slider.dragStartTime) {
+	if (slider.sidUpdateTime >= slider.dragStartTime) {
 		TRACE("Ignoring user intent due to system change on slider %ls\n", slider.sid);
 		return;
 	}
@@ -593,7 +594,7 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSimpleVolumeChanged(
 		TRACE("Got a OnSimpleVolumeChanged unmatched slider: %ls", sid);
 		return S_OK;  // This is expected if we have more than SLIDER_COUNT active sessions.
 	}
-	sliders[i].systemUpdateTime = time(0);
+	sliders[i].systemVolumeUpdateTime = time(0);
 	sliders[i].volumeFromSystem = NewMute ? 0 : NewVolume;
 	updateControlsFromSliders();
 	return S_OK;

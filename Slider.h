@@ -17,10 +17,12 @@ struct Slider {
 	CString label;
 	float vuMeter; // range 0..1  Does not trigger systemUpdateTime
 	float volumeFromSystem; // range 0..1
-	time_t systemUpdateTime;
 
 	// intent data coming from the slider
 	float volumeIntent;  // range 0..1
+
+	time_t sidUpdateTime;
+	time_t systemVolumeUpdateTime;
 	time_t dragStartTime;
 };
 
