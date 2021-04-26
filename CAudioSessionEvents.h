@@ -19,13 +19,13 @@ class CAudioSessionEvents : public IAudioSessionEvents
 
 private:
 	// The identifier of the session we are listening to.
-	CStrinng sid;
+	LPWSTR sid;
 
 	// The app that's expected to outlive this object.
 	IDomsAudioSessionEvents* receiver;
 
 public:
-	CAudioSessionEvents(CSTRING sid_, IDomsAudioSessionEvents* receiver_) :
+	CAudioSessionEvents(LPWSTR sid_, IDomsAudioSessionEvents* receiver_) :
 		_cRef(1),
 		sid(sid_),
 		receiver(receiver_)
@@ -122,6 +122,6 @@ public:
 	HRESULT STDMETHODCALLTYPE OnSessionDisconnected(
 		AudioSessionDisconnectReason DisconnectReason)
 	{
-		return receiver->OnStateChanged(sid, NewState);
+		return receiver->OnSessionDisconnected(sid, DisconnectReason);
 	}
 };

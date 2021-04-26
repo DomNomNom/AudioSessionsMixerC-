@@ -9,17 +9,17 @@ public:
 	virtual ~IDomsAudioSessionEvents() {}
 
 	virtual HRESULT STDMETHODCALLTYPE OnSimpleVolumeChanged(
-		CString sid,
+		const LPWSTR& sid,
 		float NewVolume,
 		BOOL NewMute,
 		LPCGUID EventContext) = 0;
 
 	virtual HRESULT STDMETHODCALLTYPE OnStateChanged(
-		CString sid,
+		const LPWSTR& sid,
 		AudioSessionState NewState) = 0;
 
 	virtual HRESULT STDMETHODCALLTYPE OnSessionDisconnected(
-		CString sid,
+		const LPWSTR& sid,
 		AudioSessionDisconnectReason DisconnectReason) = 0;
 
 	// from IAudioSessionNotification

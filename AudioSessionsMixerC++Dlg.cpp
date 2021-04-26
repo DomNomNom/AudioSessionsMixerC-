@@ -258,12 +258,12 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 	bool stillConnected[SLIDER_COUNT];
 	for (int i = 0; i < SLIDER_COUNT; ++i) stillConnected[i] = false;
 
-	for (const CAudioSession& session : m_AudioSessionList) {
+	for (const auto& session : m_AudioSessionList) {
 		DWORD pid = NULL;
 		int hr;
-		CHECK_HR(hr = session.pSessionControl2->GetProcessId(&pid));
+		CHECK_HR(hr = session->pSessionControl2->GetProcessId(&pid));
 		LPWSTR sid;
-		CHECK_HR(hr = session.pSessionControl2->GetSessionInstanceIdentifier(&sid));
+		CHECK_HR(hr = session->pSessionControl2->GetSessionInstanceIdentifier(&sid));
 		if (sid == NULL) continue;
 
 		bool isUpdate = false;  // Whether we should override the current slider drag position.
@@ -461,10 +461,13 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 			continue; // we already have a CAudioSession for this.
 		}
 
-		CAudioSession* session = new CAudioSession();
+		std::unique_ptr<CAudioSession> session();
+		CAudioSessionEvents* eventListener = new CAudioSessionEvents(sid, this);
+		CHECK_HR(hr = pSessionControl->RegisterAudioSessionNotification(eventListener));
 		session->sid = sid;
 		session->pSessionControl = pSessionControl;
 		session->pSessionControl2 = pSessionControl2;
+		session->eventListener = eventListener;
 
 		// get session volume control
 		CHECK_HR(hr = session->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
@@ -475,7 +478,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		DWORD id = NULL;
 		CHECK_HR(hr = session->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
-		m_AudioSessionList.push_back(*session);
+		m_AudioSessionList.push_back(std::move(*session));
 
 		//CString str = L"";
 		//HWND hwndo = NULL;//;
@@ -570,19 +573,19 @@ void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pSc
 
 
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSimpleVolumeChanged(
-	CString sid,
+	const LPWSTR& sid,
 	float NewVolume,
 	BOOL NewMute,
 	LPCGUID EventContext) {
 	return S_OK;
 }
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
-	CString sid,
+	const LPWSTR& sid,
 	AudioSessionState NewState) {
 	return S_OK;
 }
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
-	CString sid,
+	const LPWSTR& sid,
 	AudioSessionDisconnectReason DisconnectReason) {
 	return S_OK;
 }

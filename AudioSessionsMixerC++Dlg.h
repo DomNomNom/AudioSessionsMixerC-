@@ -6,6 +6,7 @@
 
 #include"CAudioSession.h"
 #include<vector>
+#include<memory>
 #include "Slider.h"
 
 #include"IDomsAudioSessionEvents.h"
@@ -46,7 +47,7 @@ private:
 	IAudioSessionControl2* pSessionControl2;
 	IAudioSessionManager2* pSessionManager;
 	CSessionNotifications pSessionNotifications;
-	std::vector<CAudioSession> m_AudioSessionList;
+	std::vector<std::unique_ptr<CAudioSession>> m_AudioSessionList;
 
 	void createSessionManager();
 
@@ -76,15 +77,15 @@ private:
 public:
 	// These methods implement IDomsAudioSessionEvents.
 	HRESULT STDMETHODCALLTYPE OnSimpleVolumeChanged(
-		CString sid,
+		const LPWSTR& sid,
 		float NewVolume,
 		BOOL NewMute,
 		LPCGUID EventContext);
 	HRESULT STDMETHODCALLTYPE OnStateChanged(
-		CString sid,
+		const LPWSTR& sid,
 		AudioSessionState NewState);
 	HRESULT STDMETHODCALLTYPE OnSessionDisconnected(
-		CString sid,
+		const LPWSTR& sid,
 		AudioSessionDisconnectReason DisconnectReason);
 	HRESULT OnSessionCreated(IAudioSessionControl* pNewSession);
 

@@ -5,7 +5,7 @@
 #include<Audioclient.h>
 
 #include<atlstr.h>
-//#include "CAudioSessionEvents.h"
+#include "CAudioSessionEvents.h"
 
 #define SAFE_RELEASE(p) { if ( (p) ) { (p)->Release(); (p) = 0; } }
 #define SAFE_DELETE(a) if( (a) != NULL ) delete (a); (a) = NULL;
@@ -22,8 +22,11 @@ public:
 public:
 
 	LPWSTR sid;  // Session identifier from pSessionControl2
+
+	// These are all owning pointers.
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	ISimpleAudioVolume* pSessionVolumeCtrl;
+	CAudioSessionEvents* eventListener;
 };
 
