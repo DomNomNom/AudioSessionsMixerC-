@@ -27,9 +27,19 @@ public:
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
-public:
 
-	LPWSTR pswSession;
+
+	// Dialog related things
+protected:
+	HICON m_hIcon;
+	virtual BOOL OnInitDialog();
+	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+	afx_msg void OnPaint();
+	afx_msg HCURSOR OnQueryDragIcon();
+	DECLARE_MESSAGE_MAP()
+
+
+public:
 
 	IAudioSessionEnumerator* pSessionList;
 	IAudioSessionControl* pSessionControl;
@@ -41,11 +51,8 @@ public:
 
 	void createSessionManager();
 	HRESULT EnumSessions();
-	void changeSelectedAudioSessionVol(UINT vol);
-
 	void updateSlidersFromSessions();
 	void updateControlsFromSliders();
-
 
 
 	// IDomsAudioSessionEvents
@@ -63,18 +70,6 @@ public:
 	HRESULT OnSessionCreated(IAudioSessionControl* pNewSession);
 
 
-	// Implementation
-protected:
-	HICON m_hIcon;
-
-	// Generated message map functions
-	virtual BOOL OnInitDialog();
-	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-	afx_msg void OnPaint();
-	afx_msg HCURSOR OnQueryDragIcon();
-	DECLARE_MESSAGE_MAP()
-	void SwapSliderToPreferredIndex(CString label, int index);
-
 
 public:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
@@ -84,7 +79,9 @@ public:
 	CComboBox m_CmbAudioSession;
 	CSliderCtrl m_SldrAudSessionVol;
 
+private:
 	CSliderCtrl sliderControls[SLIDER_COUNT];
 	CStatic textControls[SLIDER_COUNT];
 	Slider sliders[SLIDER_COUNT];
+	void SwapSliderToPreferredIndex(CString label, int index);
 };

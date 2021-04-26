@@ -160,7 +160,6 @@ CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
 	pSessionNotifications(static_cast<IDomsAudioSessionEvents*> (this))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-	pswSession = NULL;
 
 	pSessionList = NULL;
 	pSessionControl = NULL;
@@ -247,7 +246,7 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 
-	
+
 	createSessionManager();
 
 	EnumSessions();
@@ -459,7 +458,6 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 
 	for (int index = 0; index < cbSessionCount; index++)
 	{
-		CoTaskMemFree(pswSession);
 		CAudioSession* sessionObj = new CAudioSession();
 
 		SAFE_RELEASE(sessionObj->pSessionControl);
@@ -481,10 +479,6 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 		sessionObj->volume = int(100 * volf);
 		//		pSessionManager->GetSimpleAudioVolume(, false, &sessionObj->pSessionVolumeCtrl);
 
-
-		//apps session name is empty volume mixer shows process name 
-		//CHECK_HR(hr = pSessionControl->GetDisplayName(&pswSession));
-		//wprintf_s(L"Session Name: %s\n", pswSession);
 
 		//so getting process id and then its name for reference of its session
 		DWORD id = NULL;
@@ -536,7 +530,6 @@ void CAudioSessionsMixerCDlg::createSessionManager()
 
 CAudioSessionsMixerCDlg::~CAudioSessionsMixerCDlg()
 {
-	CoTaskMemFree(pswSession);
 	SAFE_RELEASE(pSessionList);
 }
 
