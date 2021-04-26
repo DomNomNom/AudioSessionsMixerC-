@@ -88,4 +88,12 @@ public:
 		AudioSessionDisconnectReason DisconnectReason);
 	HRESULT OnSessionCreated(IAudioSessionControl* pNewSession);
 
+
+private:
+	// Things for finding stuff by session id's.
+	// We cache the last successful find to save some string matching time.
+	int findSessionIndexBySid(const LPWSTR& sid);
+	int findSliderIndexBySid(const LPWSTR& sid);
+	int lastFoundSessionIndex;
+	int lastFoundSliderIndex;
 };

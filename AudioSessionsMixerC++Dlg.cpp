@@ -157,7 +157,9 @@ END_MESSAGE_MAP()
 
 CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_AUDIOSESSIONSMIXERC_DIALOG, pParent),
-	pSessionNotifications(static_cast<IDomsAudioSessionEvents*> (this))
+	pSessionNotifications(static_cast<IDomsAudioSessionEvents*> (this)),
+	lastFoundSessionIndex(0),
+	lastFoundSliderIndex(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
@@ -268,12 +270,10 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 
 		// Scan through sliders to find one with matching ID
 		Slider* slider = NULL;
-		for (int i = 0; i < SLIDER_COUNT; ++i) {
-			if (sliders[i].connected && wcscmp(sliders[i].sid, sid) == 0) {
-				slider = &(sliders[i]);
-				stillConnected[i] = true;
-				break;
-			}
+		int i = findSliderIndexBySid(sid);
+		if (i >= 0) {
+			slider = &(sliders[i]);
+			stillConnected[i] = true;
 		}
 
 		// No matching one? Find a free slot.
@@ -446,33 +446,42 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 
 	for (int i = 0; i < sessionCount; i++)
 	{
-		CAudioSession* sessionObj = new CAudioSession();
-
-		SAFE_RELEASE(sessionObj->pSessionControl);
-
 		// Get the <n>th session.
-		CHECK_HR(hr = pSessionList->GetSession(i, &sessionObj->pSessionControl));
-
+		IAudioSessionControl* pSessionControl;
+		IAudioSessionControl2* pSessionControl2;
+		CHECK_HR(hr = pSessionList->GetSession(i, &pSessionControl));
 		// pSessionControl->AddRef();
 		// Get the extended session control interface pointer.
-		CHECK_HR(hr = sessionObj->pSessionControl->QueryInterface(
-			__uuidof(IAudioSessionControl2), (void**)&sessionObj->pSessionControl2));
+		CHECK_HR(hr = pSessionControl->QueryInterface(
+			__uuidof(IAudioSessionControl2), (void**)&pSessionControl2));
+
+		LPWSTR sid;
+		CHECK_HR(hr = pSessionControl2->GetSessionInstanceIdentifier(&sid));
+		if (findSessionIndexBySid(sid) >= 0) {
+			continue; // we already have a CAudioSession for this.
+		}
+
+		CAudioSession* session = new CAudioSession();
+		session->sid = sid;
+		session->pSessionControl = pSessionControl;
+		session->pSessionControl2 = pSessionControl2;
 
 		// get session volume control
-		CHECK_HR(hr = sessionObj->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
-			(void**)&sessionObj->pSessionVolumeCtrl));
+		CHECK_HR(hr = session->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
+			(void**)&session->pSessionVolumeCtrl));
 
 
 		//so getting process id and then its name for reference of its session
 		DWORD id = NULL;
-		CHECK_HR(hr = sessionObj->pSessionControl2->GetProcessId(&id));//audio session owner process id  
+		CHECK_HR(hr = session->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
-		m_AudioSessionList.push_back(*sessionObj);
+		m_AudioSessionList.push_back(*session);
 
 		//CString str = L"";
 		//HWND hwndo = NULL;//;
 		//int i=GetWindowTextA(GetWindowHandleFromProcessID(id), LPSTR(str.GetString()), NULL);
 	}
+	TRACE("SESSIONS: %d\n", m_AudioSessionList.size());
 }
 
 void CAudioSessionsMixerCDlg::createSessionManager()
@@ -517,21 +526,12 @@ void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 		TRACE("Ignoring user intent due to system change on slider %ls\n", slider.sid);
 		return;
 	}
-
-	// Scan through audio sessions to find one with matching sid.
-	// TODO: Optimize by trying the lastest-changed index first.
-	for (CAudioSession session : m_AudioSessionList) {
-		LPWSTR sid;
-		int hr;
-		CHECK_HR(hr = session.pSessionControl2->GetSessionInstanceIdentifier(&sid));
-		if (wcscmp(slider.sid, sid)) continue;
-
-		//TRACE("volumeIntent: %f %ls\n", slider.volumeIntent, slider.label);
-		session.pSessionVolumeCtrl->SetMasterVolume(slider.volumeIntent, NULL);
-
+	int i = findSessionIndexBySid(slider.sid);
+	if (i < 0) {
+		TRACE("OnVolumeIntent could not find corresponding session for slider %ls\n", slider.sid);
 		return;
 	}
-	TRACE("OnVolumeIntent could not find corresponding session for slider %ls\n", slider.sid);
+	m_AudioSessionList[i].pSessionVolumeCtrl->SetMasterVolume(slider.volumeIntent, NULL);
 }
 
 void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
@@ -589,4 +589,30 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
 HRESULT CAudioSessionsMixerCDlg::OnSessionCreated(IAudioSessionControl* pNewSession) {
 	updateEverythingFromOS();
 	return S_OK;
+}
+
+
+// Things for finding stuff by sid's.
+int CAudioSessionsMixerCDlg::findSessionIndexBySid(const LPWSTR& sid) {
+	int size = m_AudioSessionList.size();
+	for (int i = 0; i < size; ++i) {
+		int j = (lastFoundSessionIndex + i) % size;
+		const CAudioSession& session = m_AudioSessionList[j];
+		if (wcscmp(session.sid, sid) == 0) {
+			lastFoundSessionIndex = j;
+			return j;
+		}
+	}
+	return -1;
+}
+int CAudioSessionsMixerCDlg::findSliderIndexBySid(const LPWSTR& sid) {
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		int j = (lastFoundSliderIndex + i) % SLIDER_COUNT;
+		const Slider& slider = sliders[j];
+		if (slider.connected && wcscmp(slider.sid, sid) == 0) {
+			lastFoundSliderIndex = j;
+			return j;
+		}
+	}
+	return -1;
 }

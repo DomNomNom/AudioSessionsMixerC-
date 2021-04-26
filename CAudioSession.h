@@ -21,6 +21,7 @@ public:
 
 public:
 
+	LPWSTR sid;  // Session identifier from pSessionControl2
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	ISimpleAudioVolume* pSessionVolumeCtrl;
