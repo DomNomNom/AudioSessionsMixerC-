@@ -4,6 +4,9 @@
 #include<audiopolicy.h>
 #include<mmdeviceapi.h>
 #include<Audioclient.h>
+#include<atlstr.h>
+
+#include "IDomsAudioSessionEvents.h"
 
 //-----------------------------------------------------------
 // Client implementation of IAudioSessionEvents interface.
@@ -14,17 +17,22 @@ class CAudioSessionEvents : public IAudioSessionEvents
 {
 	LONG _cRef;
 
-	CSTRING sid;
+private:
+	// The identifier of the session we are listening to.
+	CStrinng sid;
+
+	// The app that's expected to outlive this object.
+	IDomsAudioSessionEvents* receiver;
 
 public:
-	CAudioSessionEvents(CSTRING sid) :
-		_cRef(1), sid
-	{
-	}
+	CAudioSessionEvents(CSTRING sid_, IDomsAudioSessionEvents* receiver_) :
+		_cRef(1),
+		sid(sid_),
+		receiver(receiver_)
+	{}
 
 	~CAudioSessionEvents()
-	{
-	}
+	{}
 
 	// IUnknown methods -- AddRef, Release, and QueryInterface
 
@@ -65,7 +73,7 @@ public:
 		return S_OK;
 	}
 
-	// Notification methods for audio session events
+	// Forward Notifications to IDomsAudioSessionEvents.
 
 	HRESULT STDMETHODCALLTYPE OnDisplayNameChanged(
 		LPCWSTR NewDisplayName,
@@ -86,17 +94,7 @@ public:
 		BOOL NewMute,
 		LPCGUID EventContext)
 	{
-		if (NewMute)
-		{
-			printf("MUTE\n");
-		}
-		else
-		{
-			printf("Volume = %d percent\n",
-				(UINT32)(100 * NewVolume + 0.5));
-		}
-
-		return S_OK;
+		return receiver->OnSimpleVolumeChanged(sid, NewVolume, NewMute, EventContext);
 	}
 
 	HRESULT STDMETHODCALLTYPE OnChannelVolumeChanged(
@@ -118,51 +116,12 @@ public:
 	HRESULT STDMETHODCALLTYPE OnStateChanged(
 		AudioSessionState NewState)
 	{
-		char* pszState = "?????";
-
-		switch (NewState)
-		{
-		case AudioSessionStateActive:
-			pszState = "active";
-			break;
-		case AudioSessionStateInactive:
-			pszState = "inactive";
-			break;
-		}
-		printf("New session state = %s\n", pszState);
-
-		return S_OK;
+		return receiver->OnStateChanged(sid, NewState);
 	}
 
 	HRESULT STDMETHODCALLTYPE OnSessionDisconnected(
 		AudioSessionDisconnectReason DisconnectReason)
 	{
-		char* pszReason = "?????";
-
-		switch (DisconnectReason)
-		{
-		case DisconnectReasonDeviceRemoval:
-			pszReason = "device removed";
-			break;
-		case DisconnectReasonServerShutdown:
-			pszReason = "server shut down";
-			break;
-		case DisconnectReasonFormatChanged:
-			pszReason = "format changed";
-			break;
-		case DisconnectReasonSessionLogoff:
-			pszReason = "user logged off";
-			break;
-		case DisconnectReasonSessionDisconnected:
-			pszReason = "session disconnected";
-			break;
-		case DisconnectReasonExclusiveModeOverride:
-			pszReason = "exclusive-mode override";
-			break;
-		}
-		printf("Audio session disconnected (reason: %s)\n",
-			pszReason);
-
-		return S_OK;
+		return receiver->OnStateChanged(sid, NewState);
 	}
 };

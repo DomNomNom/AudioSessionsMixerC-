@@ -5,6 +5,7 @@
 #include<Audioclient.h>
 
 #include<atlstr.h>
+//#include "CAudioSessionEvents.h"
 
 #define SAFE_RELEASE(p) { if ( (p) ) { (p)->Release(); (p) = 0; } }
 #define SAFE_DELETE(a) if( (a) != NULL ) delete (a); (a) = NULL;
