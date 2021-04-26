@@ -24,38 +24,38 @@
 //////////////////////////////////////
 //HWND GetWindowHandleFromProcessID(DWORD dwProcessID)
 //{
-//	// find all hWnds (vhWnds) associated with a process id (dwProcessID)
-//	HWND hCurWnd = NULL;
-//	HWND h = ::GetTopWindow(0);
-//	while (h)
-//	{
-//		DWORD pid;
-//		DWORD dwTheardId = ::GetWindowThreadProcessId(h, &pid);
+//  // find all hWnds (vhWnds) associated with a process id (dwProcessID)
+//  HWND hCurWnd = NULL;
+//  HWND h = ::GetTopWindow(0);
+//  while (h)
+//  {
+//      DWORD pid;
+//      DWORD dwTheardId = ::GetWindowThreadProcessId(h, &pid);
 //
 //
 //
-//		if (pid == dwProcessID)
-//		{
-//			// here h is the handle to the window
-//			return h;
-//			break;
-//		}
-//		h = ::GetNextWindow(h, GW_HWNDNEXT);
-//	}
-//	return NULL;
-////	do
-////	{
-////		hCurWnd = FindWindowEx(NULL, hCurWnd, NULL, NULL);
-////		DWORD dwProcessID = 0;
-////		GetWindowThreadProcessId(hCurWnd, &dwProcessID);
-////		if (dwProcessID == dwProcessID)
-////		{
-//////			vhWnds.push_back(hCurWnd);  // add the found hCurWnd to the vector
-////	//		wprintf(L"Found hWnd %d\n", hCurWnd);
-////			return hCurWnd;
-////		}
-////	} while (hCurWnd != NULL);
-////	return NULL;
+//      if (pid == dwProcessID)
+//      {
+//          // here h is the handle to the window
+//          return h;
+//          break;
+//      }
+//      h = ::GetNextWindow(h, GW_HWNDNEXT);
+//  }
+//  return NULL;
+////    do
+////    {
+////        hCurWnd = FindWindowEx(NULL, hCurWnd, NULL, NULL);
+////        DWORD dwProcessID = 0;
+////        GetWindowThreadProcessId(hCurWnd, &dwProcessID);
+////        if (dwProcessID == dwProcessID)
+////        {
+//////          vhWnds.push_back(hCurWnd);  // add the found hCurWnd to the vector
+////    //      wprintf(L"Found hWnd %d\n", hCurWnd);
+////            return hCurWnd;
+////        }
+////    } while (hCurWnd != NULL);
+////    return NULL;
 //
 //
 //}
@@ -67,7 +67,7 @@ std::wstring GetProcName(DWORD aPid)
 	HANDLE processesSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (processesSnapshot == INVALID_HANDLE_VALUE)
 	{
-		//	std::wcout << "can't get a process snapshot ";
+		//  std::wcout << "can't get a process snapshot ";
 		return std::wstring();
 	}
 
@@ -75,13 +75,13 @@ std::wstring GetProcName(DWORD aPid)
 	{
 		if (aPid == processInfo.th32ProcessID)
 		{
-			//	std::wcout << "found running process: " << processInfo.szExeFile;
+			//  std::wcout << "found running process: " << processInfo.szExeFile;
 			CloseHandle(processesSnapshot);
 			return processInfo.szExeFile;
 		}
 
 	}
-	//	std::wcout << "no process with given pid" << aPid;
+	//  std::wcout << "no process with given pid" << aPid;
 	CloseHandle(processesSnapshot);
 	return std::wstring();
 }
@@ -195,7 +195,7 @@ END_MESSAGE_MAP()
 
 BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 {
-	{	// Position the sliders and text box controls.
+	{   // Position the sliders and text box controls.
 		const int WD = 100;  // Width of each slider column
 		const int TEXT_BOTTOM = 100;
 		int i = 0;
@@ -242,8 +242,8 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
-	SetIcon(m_hIcon, TRUE);			// Set big icon
-	SetIcon(m_hIcon, FALSE);		// Set small icon
+	SetIcon(m_hIcon, TRUE);         // Set big icon
+	SetIcon(m_hIcon, FALSE);        // Set small icon
 
 
 
@@ -295,7 +295,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		}
 
 		CString label;
-		//CHECK_HR(hr = session.pSessionControl2->GetDisplayName(&label));
+		//CHECK_HR(hr = session->pSessionControl2->GetDisplayName(&label));
 		label = CString(GetProcName(pid).c_str());
 		if (label == "") {
 			TRACE("Ignoring probably dead audio session from pid=%d\n", pid);
@@ -310,8 +310,8 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 
 		float volumeFromSystem;
 		BOOL mute;
-		CHECK_HR(hr = session.pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
-		CHECK_HR(hr = session.pSessionVolumeCtrl->GetMute(&mute));
+		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
+		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMute(&mute));
 		if (mute) volumeFromSystem = 0;
 		if (slider->volumeFromSystem != volumeFromSystem) isUpdate = true;
 
@@ -446,7 +446,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 
 	for (int i = 0; i < sessionCount; i++)
 	{
-		// Get the <n>th session.
+		// Get the <n>th session->
 		IAudioSessionControl* pSessionControl;
 		IAudioSessionControl2* pSessionControl2;
 		CHECK_HR(hr = pSessionList->GetSession(i, &pSessionControl));
@@ -461,7 +461,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 			continue; // we already have a CAudioSession for this.
 		}
 
-		std::unique_ptr<CAudioSession> session();
+		std::unique_ptr<CAudioSession> session = std::make_unique<CAudioSession>();
 		CAudioSessionEvents* eventListener = new CAudioSessionEvents(sid, this);
 		CHECK_HR(hr = pSessionControl->RegisterAudioSessionNotification(eventListener));
 		session->sid = sid;
@@ -478,7 +478,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		DWORD id = NULL;
 		CHECK_HR(hr = session->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
-		m_AudioSessionList.push_back(std::move(*session));
+		m_AudioSessionList.push_back(std::move(session));
 
 		//CString str = L"";
 		//HWND hwndo = NULL;//;
@@ -534,7 +534,7 @@ void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 		TRACE("OnVolumeIntent could not find corresponding session for slider %ls\n", slider.sid);
 		return;
 	}
-	m_AudioSessionList[i].pSessionVolumeCtrl->SetMasterVolume(slider.volumeIntent, NULL);
+	m_AudioSessionList[i]->pSessionVolumeCtrl->SetMasterVolume(slider.volumeIntent, NULL);
 }
 
 void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
@@ -577,6 +577,14 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSimpleVolumeChanged(
 	float NewVolume,
 	BOOL NewMute,
 	LPCGUID EventContext) {
+	int i = findSliderIndexBySid(sid);
+	if (i < 0) {
+		TRACE("Got a OnSimpleVolumeChanged unmatched slider: %ls", sid);
+		return S_OK;  // This is expected if we have more than SLIDER_COUNT active sessions.
+	}
+	sliders[i].systemUpdateTime = time(0);
+	sliders[i].volumeFromSystem = NewMute ? 0 : NewVolume;
+	updateControlsFromSliders();
 	return S_OK;
 }
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
@@ -600,8 +608,8 @@ int CAudioSessionsMixerCDlg::findSessionIndexBySid(const LPWSTR& sid) {
 	int size = m_AudioSessionList.size();
 	for (int i = 0; i < size; ++i) {
 		int j = (lastFoundSessionIndex + i) % size;
-		const CAudioSession& session = m_AudioSessionList[j];
-		if (wcscmp(session.sid, sid) == 0) {
+		const std::unique_ptr<CAudioSession>& session = m_AudioSessionList[j];
+		if (wcscmp(session->sid, sid) == 0) {
 			lastFoundSessionIndex = j;
 			return j;
 		}
