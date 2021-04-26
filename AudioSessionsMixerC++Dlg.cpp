@@ -213,8 +213,6 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	}
 	CDialogEx::OnInitDialog();
 
-	SetWindowLong(m_SldrAudSessionVol, GWL_STYLE, 0); // hide
-	SetWindowLong(m_CmbAudioSession, GWL_STYLE, 0); // hide
 
 
 	int hr;

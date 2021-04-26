@@ -39,14 +39,13 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 
-public:
-
+private:
+	// Things for attaching to AudioSessions.
 	IAudioSessionEnumerator* pSessionList;
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	IAudioSessionManager2* pSessionManager;
 	CSessionNotifications pSessionNotifications;
-
 	std::vector<CAudioSession> m_AudioSessionList;
 
 	void createSessionManager();
@@ -55,6 +54,7 @@ public:
 	void updateControlsFromSliders();
 
 
+public:
 	// IDomsAudioSessionEvents
 	HRESULT STDMETHODCALLTYPE OnSimpleVolumeChanged(
 		CString sid,
@@ -70,18 +70,14 @@ public:
 	HRESULT OnSessionCreated(IAudioSessionControl* pNewSession);
 
 
-
+	// Things for controling Sliders.
 public:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 
-	void OnVolumeIntent(const Slider& slider);
-
-	CComboBox m_CmbAudioSession;
-	CSliderCtrl m_SldrAudSessionVol;
-
 private:
-	CSliderCtrl sliderControls[SLIDER_COUNT];
-	CStatic textControls[SLIDER_COUNT];
 	Slider sliders[SLIDER_COUNT];
+	CStatic textControls[SLIDER_COUNT];
+	CSliderCtrl sliderControls[SLIDER_COUNT];
+	void OnVolumeIntent(const Slider& slider);
 	void SwapSliderToPreferredIndex(CString label, int index);
 };
