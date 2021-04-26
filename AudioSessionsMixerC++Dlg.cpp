@@ -430,38 +430,31 @@ void CAudioSessionsMixerCDlg::OnPaint()
 }
 
 // The system calls this function to obtain the cursor to display while the user drags
-//  the minimized window.
+// the minimized window.
 HCURSOR CAudioSessionsMixerCDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-HRESULT CAudioSessionsMixerCDlg::EnumSessions()
+void CAudioSessionsMixerCDlg::EnumSessions()
 {
-	if (!pSessionManager)
-	{
-		return E_INVALIDARG;
-	}
-
-	HRESULT hr = S_OK;
-
-	int cbSessionCount = 0;
-
+	HRESULT hr;
 
 	// Get the current list of sessions.
 	CHECK_HR(hr = pSessionManager->GetSessionEnumerator(&pSessionList));
 
 	// Get the session count.
-	CHECK_HR(hr = pSessionList->GetCount(&cbSessionCount));
+	int sessionCount = 0;
+	CHECK_HR(hr = pSessionList->GetCount(&sessionCount));
 
-	for (int index = 0; index < cbSessionCount; index++)
+	for (int i = 0; i < sessionCount; i++)
 	{
 		CAudioSession* sessionObj = new CAudioSession();
 
 		SAFE_RELEASE(sessionObj->pSessionControl);
 
 		// Get the <n>th session.
-		CHECK_HR(hr = pSessionList->GetSession(index, &sessionObj->pSessionControl));
+		CHECK_HR(hr = pSessionList->GetSession(i, &sessionObj->pSessionControl));
 
 		// pSessionControl->AddRef();
 		// Get the extended session control interface pointer.
@@ -497,7 +490,6 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 		//int i=GetWindowTextA(GetWindowHandleFromProcessID(id), LPSTR(str.GetString()), NULL);
 
 	}
-	return hr;
 }
 
 void CAudioSessionsMixerCDlg::createSessionManager()

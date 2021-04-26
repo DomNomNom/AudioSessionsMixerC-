@@ -49,13 +49,13 @@ private:
 	std::vector<CAudioSession> m_AudioSessionList;
 
 	void createSessionManager();
-	HRESULT EnumSessions();
+	void EnumSessions();
 	void updateSlidersFromSessions();
 	void updateControlsFromSliders();
 
 
 public:
-	// IDomsAudioSessionEvents
+	// These methods implement IDomsAudioSessionEvents.
 	HRESULT STDMETHODCALLTYPE OnSimpleVolumeChanged(
 		CString sid,
 		float NewVolume,
