@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include<audiopolicy.h>
 #include<mmdeviceapi.h>
 #include<Audioclient.h>
@@ -27,6 +28,7 @@ public:
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	ISimpleAudioVolume* pSessionVolumeCtrl;
-	CAudioSessionEvents* eventListener;
+
+	std::unique_ptr<CAudioSessionEvents> eventListener;
 };
 

@@ -85,6 +85,7 @@ std::wstring GetProcName(DWORD aPid)
 	CloseHandle(processesSnapshot);
 	return std::wstring();
 }
+
 std::string ProcessIdToName(DWORD processId)
 {
 	std::string ret;
@@ -462,12 +463,11 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		}
 
 		std::unique_ptr<CAudioSession> session = std::make_unique<CAudioSession>();
-		CAudioSessionEvents* eventListener = new CAudioSessionEvents(sid, this);
-		CHECK_HR(hr = pSessionControl->RegisterAudioSessionNotification(eventListener));
 		session->sid = sid;
 		session->pSessionControl = pSessionControl;
 		session->pSessionControl2 = pSessionControl2;
-		session->eventListener = eventListener;
+		session->eventListener = std::make_unique<CAudioSessionEvents>(sid, (IDomsAudioSessionEvents*)(this));
+		CHECK_HR(hr = pSessionControl->RegisterAudioSessionNotification(session->eventListener.get()));
 
 		// get session volume control
 		CHECK_HR(hr = session->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
@@ -605,7 +605,7 @@ HRESULT CAudioSessionsMixerCDlg::OnSessionCreated(IAudioSessionControl* pNewSess
 
 // Things for finding stuff by sid's.
 int CAudioSessionsMixerCDlg::findSessionIndexBySid(const LPWSTR& sid) {
-	int size = m_AudioSessionList.size();
+	size_t size = m_AudioSessionList.size();
 	for (int i = 0; i < size; ++i) {
 		int j = (lastFoundSessionIndex + i) % size;
 		const std::unique_ptr<CAudioSession>& session = m_AudioSessionList[j];

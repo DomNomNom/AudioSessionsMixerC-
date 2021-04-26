@@ -12,6 +12,5 @@ CAudioSession::~CAudioSession()
 	/*SAFE_RELEASE(pSessionControl);
 	SAFE_RELEASE(pSessionControl2);*/
 	int hr;
-	CHECK_HR(hr = pSessionControl->UnregisterAudioSessionNotification(eventListener));
-	delete eventListener;
+	CHECK_HR(hr = pSessionControl->UnregisterAudioSessionNotification(eventListener.get()));
 }
