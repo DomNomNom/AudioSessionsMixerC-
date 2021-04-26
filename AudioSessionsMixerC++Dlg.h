@@ -37,15 +37,15 @@ public:
 	IAudioSessionManager2* pSessionManager;
 	CSessionNotifications pSessionNotifications;
 
+	std::vector<CAudioSession> m_AudioSessionList;
+
 	void createSessionManager();
 	HRESULT EnumSessions();
-	void initCmbWithAudSessionName();
 	void changeSelectedAudioSessionVol(UINT vol);
 
 	void updateSlidersFromSessions();
 	void updateControlsFromSliders();
 
-	std::vector<CAudioSession> m_AudioSessionList;
 
 
 	// IDomsAudioSessionEvents
@@ -77,11 +77,8 @@ protected:
 
 
 public:
-	afx_msg void OnNMCustomdrawSlider1(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnCbnSelchangeComboAudsession();
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-	afx_msg void OnTRBNThumbPosChangingSliderAudsessionVol(NMHDR* pNMHDR, LRESULT* pResult);
-	//afx_msg void OnSliderControlChange(NMHDR* pNMHDR, LRESULT* pResult);
+
 	void OnVolumeIntent(const Slider& slider);
 
 	CComboBox m_CmbAudioSession;

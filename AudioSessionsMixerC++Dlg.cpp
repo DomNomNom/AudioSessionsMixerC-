@@ -174,8 +174,6 @@ CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
 void CAudioSessionsMixerCDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_COMBO_AUDSESSION, m_CmbAudioSession);
-	DDX_Control(pDX, IDC_SLIDER_AUDSESSION_VOL, m_SldrAudSessionVol);
 	int i = 0;
 	for (CSliderCtrl& slider : sliderControls) {
 		DDX_Control(pDX, SLIDER_CONTROL_BASE_ID + i, slider);
@@ -187,12 +185,6 @@ BEGIN_MESSAGE_MAP(CAudioSessionsMixerCDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_CBN_SELCHANGE(IDC_COMBO_AUDSESSION, &CAudioSessionsMixerCDlg::OnCbnSelchangeComboAudsession)
-#pragma warning(suppress : 26454) 
-	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1)
-#pragma warning(suppress : 26454) 
-	ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER_AUDSESSION_VOL, &CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol)
-
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
@@ -255,19 +247,10 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 
-	// TODO: Add extra initialization here
-	m_SldrAudSessionVol.SetRange(-100, 0, TRUE);
-	m_SldrAudSessionVol.SetTicFreq(1);
-	m_SldrAudSessionVol.SetPos(0);
-
-
+	
 	createSessionManager();
 
 	EnumSessions();
-
-	if (m_AudioSessionList.size() > 0)
-		initCmbWithAudSessionName();
-
 	updateSlidersFromSessions();
 	updateControlsFromSliders();
 
@@ -484,12 +467,12 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 		// Get the <n>th session.
 		CHECK_HR(hr = pSessionList->GetSession(index, &sessionObj->pSessionControl));
 
-		//		pSessionControl->AddRef();
-				  // Get the extended session control interface pointer.
+		// pSessionControl->AddRef();
+		// Get the extended session control interface pointer.
 		CHECK_HR(hr = sessionObj->pSessionControl->QueryInterface(
 			__uuidof(IAudioSessionControl2), (void**)&sessionObj->pSessionControl2));
 
-		//get session volume control
+		// get session volume control
 		CHECK_HR(hr = sessionObj->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
 			(void**)&sessionObj->pSessionVolumeCtrl));
 
@@ -499,11 +482,11 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 		//		pSessionManager->GetSimpleAudioVolume(, false, &sessionObj->pSessionVolumeCtrl);
 
 
-				//apps session name is empty volume mixer shows process name 
-				//CHECK_HR(hr = pSessionControl->GetDisplayName(&pswSession));
-				//wprintf_s(L"Session Name: %s\n", pswSession);
+		//apps session name is empty volume mixer shows process name 
+		//CHECK_HR(hr = pSessionControl->GetDisplayName(&pswSession));
+		//wprintf_s(L"Session Name: %s\n", pswSession);
 
-				//so getting process id and then its name for reference of its session
+		//so getting process id and then its name for reference of its session
 		DWORD id = NULL;
 		CHECK_HR(hr = sessionObj->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
@@ -523,20 +506,6 @@ HRESULT CAudioSessionsMixerCDlg::EnumSessions()
 
 	}
 	return hr;
-}
-
-void CAudioSessionsMixerCDlg::initCmbWithAudSessionName()
-{
-	for (int i = 0; i < m_AudioSessionList.size(); i++)
-		m_CmbAudioSession.AddString(m_AudioSessionList[i].exeName);
-}
-
-void CAudioSessionsMixerCDlg::changeSelectedAudioSessionVol(UINT vol)
-{
-	int sel = m_CmbAudioSession.GetCurSel();
-	if (sel < 0) return;
-	float value = float(vol) / 100.0f;
-	m_AudioSessionList[sel].pSessionVolumeCtrl->SetMasterVolume(value, NULL);
 }
 
 void CAudioSessionsMixerCDlg::createSessionManager()
@@ -571,35 +540,6 @@ CAudioSessionsMixerCDlg::~CAudioSessionsMixerCDlg()
 	SAFE_RELEASE(pSessionList);
 }
 
-
-
-void CAudioSessionsMixerCDlg::OnNMCustomdrawSlider1(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
-	// TODO: Add your control notification handler code here
-
-	*pResult = 0;
-}
-
-
-void CAudioSessionsMixerCDlg::OnCbnSelchangeComboAudsession()
-{
-	int sel = m_CmbAudioSession.GetCurSel();
-	m_SldrAudSessionVol.ClearSel();
-	if (sel < 0) return;
-	m_SldrAudSessionVol.SetPos(-1 * m_AudioSessionList[sel].volume);
-}
-
-
-void CAudioSessionsMixerCDlg::OnTRBNThumbPosChangingSliderAudsessionVol(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	// This feature requires Windows Vista or greater.
-	// The symbol _WIN32_WINNT must be >= 0x0600.
-	NMTRBTHUMBPOSCHANGING* pNMTPC = reinterpret_cast<NMTRBTHUMBPOSCHANGING*>(pNMHDR);
-	// TODO: Add your control notification handler code here
-
-	*pResult = 0;
-}
 
 void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 
@@ -651,13 +591,6 @@ void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pSc
 			break;
 		}
 	}
-
-	if (sliderControl == &m_SldrAudSessionVol)
-	{
-		int vol = -1 * m_SldrAudSessionVol.GetPos();
-		changeSelectedAudioSessionVol(vol);
-	}
-	OnSessionCreated(NULL);
 
 	CDialogEx::OnVScroll(nSBCode, nPos, pScrollBar);
 }
