@@ -247,9 +247,7 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 
 	createSessionManager();
 
-	EnumSessions();
-	updateSlidersFromSessions();
-	updateControlsFromSliders();
+	updateEverythingFromOS();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -436,7 +434,7 @@ HCURSOR CAudioSessionsMixerCDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CAudioSessionsMixerCDlg::EnumSessions()
+void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 {
 	HRESULT hr;
 
@@ -580,6 +578,12 @@ void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pSc
 
 
 
+
+// These methods implement IDomsAudioSessionEvents.
+
+
+
+
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSimpleVolumeChanged(
 	CString sid,
 	float NewVolume,
@@ -598,8 +602,6 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
 	return S_OK;
 }
 HRESULT CAudioSessionsMixerCDlg::OnSessionCreated(IAudioSessionControl* pNewSession) {
-	EnumSessions();
-	updateSlidersFromSessions();
-	updateControlsFromSliders();
+	updateEverythingFromOS();
 	return S_OK;
 }

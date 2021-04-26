@@ -49,9 +49,28 @@ private:
 	std::vector<CAudioSession> m_AudioSessionList;
 
 	void createSessionManager();
-	void EnumSessions();
+
+	void updateEverythingFromOS() {
+		updateSessionsFromManager();
+		updateSlidersFromSessions();
+		updateControlsFromSliders();
+	}
+	void updateSessionsFromManager();
 	void updateSlidersFromSessions();
 	void updateControlsFromSliders();
+
+
+
+	// Things for controling Sliders.
+public:
+	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+
+private:
+	Slider sliders[SLIDER_COUNT];
+	CStatic textControls[SLIDER_COUNT];
+	CSliderCtrl sliderControls[SLIDER_COUNT];
+	void OnVolumeIntent(const Slider& slider);
+	void SwapSliderToPreferredIndex(CString label, int index);
 
 
 public:
@@ -69,15 +88,4 @@ public:
 		AudioSessionDisconnectReason DisconnectReason);
 	HRESULT OnSessionCreated(IAudioSessionControl* pNewSession);
 
-
-	// Things for controling Sliders.
-public:
-	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-
-private:
-	Slider sliders[SLIDER_COUNT];
-	CStatic textControls[SLIDER_COUNT];
-	CSliderCtrl sliderControls[SLIDER_COUNT];
-	void OnVolumeIntent(const Slider& slider);
-	void SwapSliderToPreferredIndex(CString label, int index);
 };
