@@ -156,7 +156,8 @@ END_MESSAGE_MAP()
 
 
 CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_AUDIOSESSIONSMIXERC_DIALOG, pParent)
+	: CDialogEx(IDD_AUDIOSESSIONSMIXERC_DIALOG, pParent),
+	pSessionNotifications(static_cast<IDomsAudioSessionEvents*> (this))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	pswSession = NULL;
@@ -284,6 +285,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		CHECK_HR(hr = session.pSessionControl2->GetProcessId(&pid));
 		LPWSTR sid;
 		CHECK_HR(hr = session.pSessionControl2->GetSessionInstanceIdentifier(&sid));
+		if (sid == NULL) continue;
 
 		bool isUpdate = false;  // Whether we should override the current slider drag position.
 
@@ -318,6 +320,10 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		CString label;
 		//CHECK_HR(hr = session.pSessionControl2->GetDisplayName(&label));
 		label = CString(GetProcName(pid).c_str());
+		if (label == "") {
+			TRACE("Ignoring probably dead audio session from pid=%d\n", pid);
+			continue;
+		}
 		if (label.GetLength() > 4) {
 			CString extension = label.Right(4);
 			if (extension == ".exe") label = label.Left(label.GetLength() - 4);
@@ -331,6 +337,10 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		CHECK_HR(hr = session.pSessionVolumeCtrl->GetMute(&mute));
 		if (mute) volumeFromSystem = 0;
 		if (slider->volumeFromSystem != volumeFromSystem) isUpdate = true;
+
+		if (label == "") {
+			TRACE("bad label: slider pid=%d sid=%ls len=%d", pid, sid);
+		}
 
 
 		slider->connected = true;
@@ -386,7 +396,6 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 
 			float volume = (slider.systemUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
 			int pos = int(volume * sliderControl.GetRangeMin() + (1.f - volume) * sliderControl.GetRangeMax());
-			TRACE("%ls %f $d", slider.label, volume, pos);
 			if (pos != sliderControl.GetPos()) {
 				sliderControl.SetPos(pos);
 			}
@@ -552,6 +561,8 @@ void CAudioSessionsMixerCDlg::createSessionManager()
 	CHECK_HR(hr = pDevice->Activate(
 		__uuidof(IAudioSessionManager2), CLSCTX_ALL,
 		NULL, (void**)&pSessionManager));
+
+	pSessionManager->RegisterSessionNotification(&pSessionNotifications);
 }
 
 CAudioSessionsMixerCDlg::~CAudioSessionsMixerCDlg()
@@ -646,7 +657,33 @@ void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pSc
 		int vol = -1 * m_SldrAudSessionVol.GetPos();
 		changeSelectedAudioSessionVol(vol);
 	}
+	OnSessionCreated(NULL);
 
 	CDialogEx::OnVScroll(nSBCode, nPos, pScrollBar);
 }
 
+
+
+HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSimpleVolumeChanged(
+	CString sid,
+	float NewVolume,
+	BOOL NewMute,
+	LPCGUID EventContext) {
+	return S_OK;
+}
+HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
+	CString sid,
+	AudioSessionState NewState) {
+	return S_OK;
+}
+HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
+	CString sid,
+	AudioSessionDisconnectReason DisconnectReason) {
+	return S_OK;
+}
+HRESULT CAudioSessionsMixerCDlg::OnSessionCreated(IAudioSessionControl* pNewSession) {
+	EnumSessions();
+	updateSlidersFromSessions();
+	updateControlsFromSliders();
+	return S_OK;
+}

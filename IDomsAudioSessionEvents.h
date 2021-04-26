@@ -1,4 +1,5 @@
 #pragma once
+#include<atlstr.h>
 
 class IDomsAudioSessionEvents {
 	// A Interface such that AudioSessionMixer dialog can receive events
@@ -8,17 +9,19 @@ public:
 	virtual ~IDomsAudioSessionEvents() {}
 
 	virtual HRESULT STDMETHODCALLTYPE OnSimpleVolumeChanged(
-		CSTRING sid,
+		CString sid,
 		float NewVolume,
 		BOOL NewMute,
 		LPCGUID EventContext) = 0;
 
 	virtual HRESULT STDMETHODCALLTYPE OnStateChanged(
-		CSTRING sid,
+		CString sid,
 		AudioSessionState NewState) = 0;
 
 	virtual HRESULT STDMETHODCALLTYPE OnSessionDisconnected(
-		CSTRING sid,
+		CString sid,
 		AudioSessionDisconnectReason DisconnectReason) = 0;
 
+	// from IAudioSessionNotification
+	virtual HRESULT OnSessionCreated(IAudioSessionControl* pNewSession) = 0;
 };

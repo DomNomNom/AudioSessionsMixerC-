@@ -8,10 +8,13 @@
 #include<vector>
 #include "Slider.h"
 
+#include"IDomsAudioSessionEvents.h"
+#include"CSessionNotifications.h"
+
 #define SLIDER_COUNT 8
 
 // CAudioSessionsMixerCDlg dialog
-class CAudioSessionsMixerCDlg : public CDialogEx
+class CAudioSessionsMixerCDlg : public CDialogEx, IDomsAudioSessionEvents
 {
 	// Construction
 public:
@@ -32,6 +35,7 @@ public:
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	IAudioSessionManager2* pSessionManager;
+	CSessionNotifications pSessionNotifications;
 
 	void createSessionManager();
 	HRESULT EnumSessions();
@@ -42,6 +46,22 @@ public:
 	void updateControlsFromSliders();
 
 	std::vector<CAudioSession> m_AudioSessionList;
+
+
+	// IDomsAudioSessionEvents
+	HRESULT STDMETHODCALLTYPE OnSimpleVolumeChanged(
+		CString sid,
+		float NewVolume,
+		BOOL NewMute,
+		LPCGUID EventContext);
+	HRESULT STDMETHODCALLTYPE OnStateChanged(
+		CString sid,
+		AudioSessionState NewState);
+	HRESULT STDMETHODCALLTYPE OnSessionDisconnected(
+		CString sid,
+		AudioSessionDisconnectReason DisconnectReason);
+	HRESULT OnSessionCreated(IAudioSessionControl* pNewSession);
+
 
 	// Implementation
 protected:
