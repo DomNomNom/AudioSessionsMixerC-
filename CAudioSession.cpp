@@ -5,6 +5,7 @@ CAudioSession::CAudioSession()
 {
 	pSessionControl = NULL;
 	pSessionControl2 = NULL;
+	pSessionVolumeCtrl = NULL;
 	sid = L"";
 }
 

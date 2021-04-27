@@ -285,7 +285,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 
 	// Connect sliders to audio dessions.
 	// Iterate backwards as we may be removing dead sessions.
-	for (int j = m_AudioSessionList.size() - 1; j >= 0; --j) {
+	for (int j = int(m_AudioSessionList.size()) - 1; j >= 0; --j) {
 		const auto& session = m_AudioSessionList[j];
 
 		const LPWSTR& sid = session->sid;
@@ -332,7 +332,6 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		//CHECK_HR(hr = session->pSessionControl2->GetDisplayName(&label));
 		label = CString(GetProcName(pid).c_str());
 		if (label == "") {
-			//TRACE("Ignoring probably dead audio session from pid=%d\n", pid);
 			TRACE("Removing dead session: %ls", sid);
 			m_AudioSessionList.erase(m_AudioSessionList.begin() + j);
 			slider->connected = false;
@@ -345,16 +344,16 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 
 		if (wcscmp(slider->label, label)) isSidUpdate = true;
 
-		float volumeFromSystem;
+		float volumeFromSystem = 0;
 		BOOL mute;
-		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
 		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMute(&mute));
-		if (mute) volumeFromSystem = 0;
+		if (!mute) {
+			CHECK_HR(hr = session->pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
+		}
 
 		if (label == "") {
 			TRACE("bad label: slider pid=%d sid=%ls len=%d", pid, sid);
 		}
-
 
 		if (slider->volumeFromSystem != volumeFromSystem) slider->systemVolumeUpdateTime = time(0);
 		if (isSidUpdate)slider->sidUpdateTime = time(0);
