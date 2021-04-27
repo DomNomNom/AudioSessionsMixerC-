@@ -11,7 +11,7 @@
 #define SAFE_RELEASE(p) { if ( (p) ) { (p)->Release(); (p) = 0; } }
 #define SAFE_DELETE(a) if( (a) != NULL ) delete (a); (a) = NULL;
 
-#define CHECK_HR(x) if (FAILED(x)) { TRACE("Exception Throw\n"); }
+#define CHECK_HR(x) hr = (x); if (hr != S_OK) { TRACE("Exception Throw: %d\n", hr); }
 
 
 class CAudioSession

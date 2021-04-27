@@ -18,6 +18,7 @@
 
 #define SLIDER_CONTROL_BASE_ID 2000
 #define STATIC_CONTROL_BASE_ID 3000
+#define DEAD_SESSION_TIMER_ID 1050
 
 
 
@@ -188,6 +189,7 @@ BEGIN_MESSAGE_MAP(CAudioSessionsMixerCDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_VSCROLL()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -215,7 +217,7 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 		}
 	}
 	CDialogEx::OnInitDialog();
-
+	SetTimer(DEAD_SESSION_TIMER_ID, 433, NULL);
 
 
 	int hr;
@@ -254,18 +256,43 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
+bool isSessionActive(const CAudioSession& session) {
+	// Active means that the 
+	AudioSessionState state;
+	int hr = session.pSessionControl->GetState(&state);
+	if (hr != S_OK) {
+		TRACE("Bad hr from session.pSessionControl->GetState(): %d", hr);
+		return false;
+	}
+	return state == AudioSessionStateActive;
+}
 
 void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 	bool stillConnected[SLIDER_COUNT];
 	for (int i = 0; i < SLIDER_COUNT; ++i) stillConnected[i] = false;
 
-	for (const auto& session : m_AudioSessionList) {
-		DWORD pid = NULL;
-		int hr;
-		CHECK_HR(hr = session->pSessionControl2->GetProcessId(&pid));
-		LPWSTR sid;
-		CHECK_HR(hr = session->pSessionControl2->GetSessionInstanceIdentifier(&sid));
-		if (sid == NULL) continue;
+	// Validate that existing sliders still make sense to be connected.
+	for (Slider& slider : sliders) {
+		if (!slider.connected) continue;
+		int i = findSessionIndexBySid(slider.sid);
+		if (i < 0) {
+			TRACE("Slider was connected but didn't match an audio session. disconnecting. %ls", slider.sid);
+			slider.connected = false;
+			continue;
+		}
+		//if (!isSessionActive(*m_AudioSessionList[i])) slider.connected = false;
+	}
+
+	// Connect sliders to audio dessions.
+	// Iterate backwards as we may be removing dead sessions.
+	for (int j = m_AudioSessionList.size() - 1; j >= 0; --j) {
+		const auto& session = m_AudioSessionList[j];
+
+		const LPWSTR& sid = session->sid;
+		if (sid == NULL) {
+			TRACE("NULL SID???");
+			continue;
+		}
 
 		bool isSidUpdate = false;  // Whether we should override the current slider drag position.
 
@@ -295,11 +322,20 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			continue;
 		}
 
+		DWORD pid = NULL;
+		int hr;
+		hr = session->pSessionControl2->GetProcessId(&pid);
+		if (hr == 143196173) hr = 0; // AUDCLNT_S_NO_CURRENT_PROCESS for explorer
+		CHECK_HR(hr);
+
 		CString label;
 		//CHECK_HR(hr = session->pSessionControl2->GetDisplayName(&label));
 		label = CString(GetProcName(pid).c_str());
 		if (label == "") {
-			TRACE("Ignoring probably dead audio session from pid=%d\n", pid);
+			//TRACE("Ignoring probably dead audio session from pid=%d\n", pid);
+			TRACE("Removing dead session: %ls", sid);
+			m_AudioSessionList.erase(m_AudioSessionList.begin() + j);
+			slider->connected = false;
 			continue;
 		}
 		if (label.GetLength() > 4) {
@@ -359,7 +395,7 @@ void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int pref
 		sliders[preferredIndex].systemVolumeUpdateTime = t;
 		return;
 	}
-	TRACE("Preferred label not found %s", label);
+	TRACE("Preferred label not found: %ls\n", label);
 }
 
 
@@ -446,6 +482,31 @@ HCURSOR CAudioSessionsMixerCDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+bool allSessionAlive(const std::vector<std::unique_ptr<CAudioSession>>& m_AudioSessionList) {
+	for (const auto& session : m_AudioSessionList) {
+		DWORD pid = NULL;
+		int hr;
+		hr = session->pSessionControl2->GetProcessId(&pid);
+		if (hr == 143196173) hr = 0; // AUDCLNT_S_NO_CURRENT_PROCESS expected for explorer
+		CHECK_HR(hr);
+		if (GetProcName(pid) == L"") {  // AUDCLNT_S_NO_CURRENT_PROCESS 
+			TRACE("Detected dead session: hr=%d sid=%ls\n", hr, session->sid);
+			return false;
+		}
+	}
+	return true;
+}
+
+void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
+{
+	if (nIdEvent == DEAD_SESSION_TIMER_ID) {
+		if (!allSessionAlive(m_AudioSessionList)) {
+			updateEverythingFromOS();
+		}
+	}
+}
+
+
 void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 {
 	HRESULT hr;
@@ -487,8 +548,8 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 
 
 		//so getting process id and then its name for reference of its session
-		DWORD id = NULL;
-		CHECK_HR(hr = session->pSessionControl2->GetProcessId(&id));//audio session owner process id  
+		//DWORD id = NULL;
+		//CHECK_HR(hr = session->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
 		m_AudioSessionList.push_back(std::move(session));
 
@@ -496,7 +557,6 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		//HWND hwndo = NULL;//;
 		//int i=GetWindowTextA(GetWindowHandleFromProcessID(id), LPSTR(str.GetString()), NULL);
 	}
-	TRACE("SESSIONS: %d\n", m_AudioSessionList.size());
 }
 
 void CAudioSessionsMixerCDlg::createSessionManager()
@@ -602,11 +662,37 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSimpleVolumeChanged(
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
 	const LPWSTR& sid,
 	AudioSessionState NewState) {
+	char* pszState = "?????";
+
+	switch (NewState)
+	{
+	case AudioSessionStateActive:
+		pszState = "active";
+		break;
+	case AudioSessionStateInactive:
+		pszState = "inactive";
+		break;
+	case AudioSessionStateExpired:
+		pszState = "expired";
+		break;
+	}
+	TRACE("New_session_state=%s sid=%ls\n", pszState, sid);
+
+	updateEverythingFromOS();
 	return S_OK;
 }
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
 	const LPWSTR& sid,
 	AudioSessionDisconnectReason DisconnectReason) {
+	TRACE("Dom has never seen OnSessionDisconnected() being fired. why is it working now?");
+	int i = findSessionIndexBySid(sid);
+	if (i >= 0) {
+		m_AudioSessionList.erase(m_AudioSessionList.begin() + i);
+	}
+	else {
+		TRACE("session disconnected twice? %d", sid);
+	}
+	updateEverythingFromOS();
 	return S_OK;
 }
 HRESULT CAudioSessionsMixerCDlg::OnSessionCreated(IAudioSessionControl* pNewSession) {

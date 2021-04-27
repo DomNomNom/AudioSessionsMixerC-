@@ -37,7 +37,9 @@ protected:
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg void OnTimer(UINT_PTR nIdEvent);
 	DECLARE_MESSAGE_MAP()
+
 
 
 private:
@@ -55,6 +57,7 @@ private:
 		updateSessionsFromManager();
 		updateSlidersFromSessions();
 		updateControlsFromSliders();
+		TRACE("updateEverythingFromOS finished with %d sessions.\n", m_AudioSessionList.size());
 	}
 	void updateSessionsFromManager();
 	void updateSlidersFromSessions();
@@ -93,6 +96,7 @@ public:
 private:
 	// Things for finding stuff by session id's.
 	// We cache the last successful find to save some string matching time.
+	// Returns a negative number if not found.
 	int findSessionIndexBySid(const LPWSTR& sid);
 	int findSliderIndexBySid(const LPWSTR& sid);
 	int lastFoundSessionIndex;
