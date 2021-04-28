@@ -160,6 +160,7 @@ END_MESSAGE_MAP()
 CAudioSessionsMixerCDlg::CAudioSessionsMixerCDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_AUDIOSESSIONSMIXERC_DIALOG, pParent),
 	pSessionNotifications(static_cast<IDomsAudioSessionEvents*> (this)),
+	midiController(static_cast<IMidiControllerEventReceiver*>(this)),
 	lastFoundSessionIndex(0),
 	lastFoundSliderIndex(0)
 {
@@ -674,7 +675,7 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
 		pszState = "expired";
 		break;
 	}
-	TRACE("New_session_state=%s sid=%ls\n", pszState, sid);
+	//TRACE("New_session_state=%s sid=%ls\n", pszState, sid);
 
 	updateEverythingFromOS();
 	return S_OK;
@@ -722,4 +723,11 @@ int CAudioSessionsMixerCDlg::findSliderIndexBySid(const LPWSTR& sid) {
 		}
 	}
 	return -1;
+}
+
+
+// Implement IMidiControllerEventReceiver
+
+void CAudioSessionsMixerCDlg::OnMidiControllerDragged(int sliderIndex, float volume) {
+	TRACE("OnMidiControllerDragged(%d, %f)", sliderIndex, volume);
 }

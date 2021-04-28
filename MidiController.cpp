@@ -4,7 +4,7 @@
 
 #define SAFE_DELETE(a) if( (a) != NULL ) delete (a); (a) = NULL;
 
-MidiController::MidiController() {
+MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : eventReceiver(eventReceiver_) {
 
 	// RtMidiIn constructor
 	try {

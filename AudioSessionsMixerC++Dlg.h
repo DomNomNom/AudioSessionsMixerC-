@@ -16,7 +16,7 @@
 #define SLIDER_COUNT 8
 
 // CAudioSessionsMixerCDlg dialog
-class CAudioSessionsMixerCDlg : public CDialogEx, IDomsAudioSessionEvents
+class CAudioSessionsMixerCDlg : public CDialogEx, IDomsAudioSessionEvents, IMidiControllerEventReceiver
 {
 	// Construction
 public:
@@ -107,4 +107,7 @@ private:
 	// MIDI device
 private:
 	MidiController midiController;
+public:  // Implement MidiControllerEventReceiver
+	void OnMidiControllerDragged(int sliderIndex, float volume);
+
 };
