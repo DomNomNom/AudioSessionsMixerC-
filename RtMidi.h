@@ -56,6 +56,10 @@
 #include <string>
 #include <vector>
 
+#pragma warning (disable: 26451)
+#pragma warning (disable: 26812)
+#pragma warning (disable: 26439)
+
  /************************************************************************/
  /*! \class RtMidiError
 	 \brief Exception handling class for RtMidi.

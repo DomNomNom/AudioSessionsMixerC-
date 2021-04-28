@@ -729,5 +729,8 @@ int CAudioSessionsMixerCDlg::findSliderIndexBySid(const LPWSTR& sid) {
 // Implement IMidiControllerEventReceiver
 
 void CAudioSessionsMixerCDlg::OnMidiControllerDragged(int sliderIndex, float volume) {
-	TRACE("OnMidiControllerDragged(%d, %f)", sliderIndex, volume);
+	TRACE("OnMidiControllerDragged(%d, %f)\n", sliderIndex, volume);
+}
+void CAudioSessionsMixerCDlg::OnMidiControllerTouch(int sliderIndex, bool down) {
+	TRACE("OnTouch(sliderIndex=%d, %s)\n", sliderIndex, down ? "down" : "up");
 }

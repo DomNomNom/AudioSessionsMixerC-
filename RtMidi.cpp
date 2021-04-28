@@ -36,10 +36,14 @@
 	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 /**********************************************************************/
-#pragma warning(disable : 26439)
 
 #include "pch.h"
 #include "RtMidi.h"
+
+#pragma warning (disable: 26451)
+#pragma warning (disable: 26812)
+#pragma warning (disable: 26439)
+
 #include <sstream>
 
 #include <exception>
