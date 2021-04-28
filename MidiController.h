@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include <memory>
 #include "RtMidi.h"
 
 class IMidiControllerEventReceiver {
@@ -14,10 +15,9 @@ public:
 	~MidiController();
 
 private:
-	// Owned. TODO: Unique_ptr
-	RtMidiIn* midiin;
-	RtMidiOut* midiout;
+	std::unique_ptr<RtMidiIn> midiin;
+	std::unique_ptr<RtMidiOut> midiout;
 
-	// Expected to outlive this object
+	// Non-owned. Expected to outlive this object.
 	IMidiControllerEventReceiver* eventReceiver;
 };

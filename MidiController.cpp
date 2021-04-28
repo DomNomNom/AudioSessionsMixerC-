@@ -8,7 +8,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 
 	// RtMidiIn constructor
 	try {
-		midiin = new RtMidiIn();
+		midiin = std::make_unique<RtMidiIn>();
 	}
 	catch (RtMidiError& error) {
 		TRACE("midiout error: %s", error.getMessage().c_str());
@@ -31,7 +31,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 
 	// RtMidiOut constructor
 	try {
-		midiout = new RtMidiOut();
+		midiout = std::make_unique<RtMidiOut>();
 	}
 	catch (RtMidiError& error) {
 		error.printMessage();
@@ -53,7 +53,4 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 	TRACE("\n");
 }
 
-MidiController::~MidiController() {
-	SAFE_DELETE(midiin);
-	SAFE_DELETE(midiout);
-}
+MidiController::~MidiController() {}
