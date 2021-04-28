@@ -19,6 +19,7 @@ public:
 	MidiController(IMidiControllerEventReceiver* eventReceiver);
 	~MidiController();
 
+	void setSliderPos(int sliderIndex, float volume);
 
 private:
 	std::unique_ptr<RtMidiIn> midiin;

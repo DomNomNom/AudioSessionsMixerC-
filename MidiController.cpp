@@ -5,6 +5,7 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <sstream>
 
 #define SAFE_DELETE(a) if( (a) != NULL ) delete (a); (a) = NULL;
@@ -12,7 +13,6 @@
 #define SLIDER_COUNT 8
 
 void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userData) {
-	//std::string msg = std::string(std::begin(*message), std::end(*message));
 	std::stringstream debugMessage;
 	std::copy(message->begin(), message->end(), std::ostream_iterator<int>(debugMessage, " "));
 	IMidiControllerEventReceiver* eventReceiver = static_cast<IMidiControllerEventReceiver*> (userData);
@@ -44,8 +44,6 @@ void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userD
 	else {
 		TRACE("Unhandled MIDI message: %s\n", debugMessage.str().c_str());
 	}
-
-	//eventReceiver->OnMidiControllerDragged(0, 3);
 }
 
 MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : eventReceiver(eventReceiver_) {
@@ -73,6 +71,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 		}
 		TRACE("  Input Port #%d: %s\n", i + 1, portName.c_str());
 		if (portName == "X-Touch-Ext 0") {
+			TRACE("    using this one.\n");
 			midiin->openPort(i, portName);
 			break;
 		}
@@ -99,8 +98,33 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 			break;
 		}
 		TRACE("  Output Port #%d: %s\n", i + 1, portName.c_str());
+		if (portName == "X-Touch-Ext 1") {
+			TRACE("    using this one.\n");
+			try {
+				midiout->openPort(i, portName);
+			}
+			catch (RtMidiError& error) {
+				TRACE("midiout error: %s", error.getMessage().c_str());
+				break;
+			}
+			break;
+		}
 	}
 	TRACE("\n");
 }
 
 MidiController::~MidiController() {}
+
+void MidiController::setSliderPos(int sliderIndex, float volume) {
+	//controllerEvent(1, vo.midi_channel, max(0, min(127, int(128 * vo.display)))
+	std::vector<unsigned char> message;
+	message.push_back(176);
+	message.push_back(70 + sliderIndex);
+	message.push_back(max(0, min(127, (unsigned char)(128 * volume))));
+	try {
+		midiout->sendMessage(&message);
+	}
+	catch (RtMidiError& error) {
+		TRACE("midiout error: %s\n", error.getMessage().c_str());
+	}
+}

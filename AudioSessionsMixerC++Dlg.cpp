@@ -414,13 +414,14 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 		const Slider& slider = sliders[i];
 		CSliderCtrl& sliderControl = sliderControls[i];
 		CStatic& textControl = textControls[i];
+		float volume = (slider.systemVolumeUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
 
+		// GUI controls
 		if (slider.connected) {
 			CString txt;
 			txt.Format(L"%ls\n\nvuMeter:\n%f", slider.label, slider.vuMeter);
 			lazyUpdateTextControl(textControl, txt);
 
-			float volume = (slider.systemVolumeUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
 			int pos = int(volume * sliderControl.GetRangeMin() + (1.f - volume) * sliderControl.GetRangeMax());
 			lazyUpdateSliderControl(sliderControl, pos);
 		}
@@ -428,6 +429,9 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 			lazyUpdateTextControl(textControl, L"-");
 			lazyUpdateSliderControl(sliderControl, sliderControl.GetRangeMax());
 		}
+
+		// MIDI controls
+		midiController.setSliderPos(i, volume);
 	}
 }
 
