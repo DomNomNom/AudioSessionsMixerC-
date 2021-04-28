@@ -38,6 +38,10 @@ CAudioSessionsMixerCApp theApp;
 
 // CAudioSessionsMixerCApp initialization
 
+void invoke_main(void) {
+
+}
+
 BOOL CAudioSessionsMixerCApp::InitInstance()
 {
 	// InitCommonControlsEx() is required on Windows XP if an application

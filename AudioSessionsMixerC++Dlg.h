@@ -11,6 +11,7 @@
 
 #include"IDomsAudioSessionEvents.h"
 #include"CSessionNotifications.h"
+#include "MidiController.h"
 
 #define SLIDER_COUNT 8
 
@@ -101,4 +102,9 @@ private:
 	int findSliderIndexBySid(const LPWSTR& sid);
 	int lastFoundSessionIndex;
 	int lastFoundSliderIndex;
+
+
+	// MIDI device
+private:
+	MidiController midiController;
 };

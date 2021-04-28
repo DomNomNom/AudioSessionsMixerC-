@@ -217,7 +217,6 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 		}
 	}
 	CDialogEx::OnInitDialog();
-	SetTimer(DEAD_SESSION_TIMER_ID, 433, NULL);
 
 
 	int hr;
@@ -249,9 +248,9 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);        // Set small icon
 
 
-
 	createSessionManager();
 	updateEverythingFromOS();
+	SetTimer(DEAD_SESSION_TIMER_ID, 433, NULL);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }

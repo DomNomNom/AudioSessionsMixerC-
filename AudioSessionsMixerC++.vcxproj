@@ -120,6 +120,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>winmm.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -192,19 +193,25 @@
     <ClInclude Include="AudioSessionsMixerC++Dlg.h" />
     <ClInclude Include="CAudioSession.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="MidiController.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="RtMidi.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AudioSessionsMixerC++.cpp" />
     <ClCompile Include="AudioSessionsMixerC++Dlg.cpp" />
     <ClCompile Include="CAudioSession.cpp" />
+    <ClCompile Include="MidiController.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="RtMidi.cpp">
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">26439</DisableSpecificWarnings>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

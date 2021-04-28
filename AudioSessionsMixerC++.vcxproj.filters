@@ -39,6 +39,12 @@
     <ClInclude Include="CAudioSession.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RtMidi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MidiController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AudioSessionsMixerC++.cpp">
@@ -51,6 +57,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CAudioSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RtMidi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MidiController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
