@@ -430,6 +430,8 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 			lazyUpdateSliderControl(sliderControl, sliderControl.GetRangeMax());
 		}
 
+		midiController.setLabel(i, slider.label);
+
 		// MIDI controls
 		midiController.setSliderPos(i, volume);
 	}

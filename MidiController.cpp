@@ -129,14 +129,83 @@ MidiController::~MidiController() {}
 
 void MidiController::setSliderPos(int sliderIndex, float volume) {
 	//controllerEvent(1, vo.midi_channel, max(0, min(127, int(128 * vo.display)))
-	std::vector<unsigned char> message;
-	message.push_back(176);
-	message.push_back(70 + sliderIndex);
-	message.push_back(max(0, min(127, (unsigned char)(128 * volume))));
+	std::vector<unsigned char> message{
+		176,
+		unsigned char(70 + sliderIndex),
+		unsigned char(max(0, min(127, int(128 * volume))))
+	};
 	try {
 		midiout->sendMessage(&message);
 	}
 	catch (RtMidiError& error) {
 		TRACE("midiout error: %s\n", error.getMessage().c_str());
 	}
+}
+
+const int DISPLAY_WD = 7;  // max number of chars on a line.
+
+void MidiController::sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgroundTop, bool backgroundBot, const CString& txtTop, const CString& txtBot) {
+	// TODO: Maybe cache and don't send these sessages.
+	std::vector<unsigned char> message{
+		0xF0, // start of SysEx
+		0x00,
+		0x20,
+		0x32,
+		0x15, // x-touch-ext device ID  which is wrongly documented as 0x42
+		0x4c,
+		unsigned char(sliderIndex),
+		unsigned char(
+			(backgroundTop ? 1 << 5 : 0) |
+			(backgroundBot ? 1 << 4 : 0) |
+			int(color)
+		),
+	};
+
+	int i;
+	for (i = 0; i < DISPLAY_WD && i < txtTop.GetLength(); ++i) {
+		message.push_back(unsigned char(txtTop.GetAt(i)));
+	}
+	for (; i < DISPLAY_WD; ++i) {
+		message.push_back(0);
+	}
+
+	for (i = 0; i < DISPLAY_WD && i < txtBot.GetLength(); ++i) {
+		message.push_back(unsigned char(txtBot.GetAt(i)));
+	}
+	for (; i < DISPLAY_WD; ++i) {
+		message.push_back(0);
+	}
+
+	message.push_back(0xf7);  // End of SysEx
+	midiout->sendMessage(&message);
+}
+
+void MidiController::setLabel(int sliderIndex, const CString& text) {
+	if (text != "") {
+		RGB3 color = RGB3::white;
+		if (text == "explorer") color = RGB3::yellow;
+		if (text == "firefox") color = RGB3::yellow;
+		if (text == "mumble") color = RGB3::green;
+		if (text == "steam") color = RGB3::cyan;
+		if (text == "Discord") color = RGB3::cyan;
+
+		CString txtTop = text.Left(DISPLAY_WD);
+		CString txtBot = text.Right(text.GetLength() - DISPLAY_WD);
+		sendDisplaySysEx(sliderIndex, color, true, true, txtTop, txtBot);
+	}
+	else {
+		sendDisplaySysEx(sliderIndex, RGB3::black, true, true, L"[OFF]", CString("[OFF]"));
+	}
+	/*
+	createDisplaySysEx(i, rgb3.black, True, True, '[OFF]', '[OFF]')
+	appid = get_appid(sink_inputs[sii])
+	upper_txt = appid[:7]
+	lower_txt = appid[7:14]
+	color = rgb3.white
+	if 'firefox' in appid : color = rgb3.yellow
+	elif 'mumble' in appid : color = rgb3.green
+	elif 'steam' in appid : color = rgb3.blue
+	midiout.sendMessage(createDisplaySysEx(i, color, True, True, upper_txt, lower_txt))
+	*/
+
 }
