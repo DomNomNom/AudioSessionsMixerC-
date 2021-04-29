@@ -196,16 +196,4 @@ void MidiController::setLabel(int sliderIndex, const CString& text) {
 	else {
 		sendDisplaySysEx(sliderIndex, RGB3::black, true, true, L"[OFF]", CString("[OFF]"));
 	}
-	/*
-	createDisplaySysEx(i, rgb3.black, True, True, '[OFF]', '[OFF]')
-	appid = get_appid(sink_inputs[sii])
-	upper_txt = appid[:7]
-	lower_txt = appid[7:14]
-	color = rgb3.white
-	if 'firefox' in appid : color = rgb3.yellow
-	elif 'mumble' in appid : color = rgb3.green
-	elif 'steam' in appid : color = rgb3.blue
-	midiout.sendMessage(createDisplaySysEx(i, color, True, True, upper_txt, lower_txt))
-	*/
-
 }
