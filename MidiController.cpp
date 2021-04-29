@@ -10,7 +10,6 @@
 
 #define SAFE_DELETE(a) if( (a) != NULL ) delete (a); (a) = NULL;
 
-#define SLIDER_COUNT 8
 
 void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userData) {
 	std::stringstream debugMessage;
@@ -47,6 +46,10 @@ void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userD
 }
 
 MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : eventReceiver(eventReceiver_) {
+
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		previousLabels[i] = L"nope...";
+	}
 
 	// RtMidiIn constructor
 	try {
@@ -181,6 +184,10 @@ void MidiController::sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgrou
 }
 
 void MidiController::setLabel(int sliderIndex, const CString& text) {
+	if (previousLabels[sliderIndex] == text) {
+		return;
+	}
+	TRACE("setLabel(%d, %ls)\n", sliderIndex, text);
 	if (text != "") {
 		RGB3 color = RGB3::white;
 		if (text == "explorer") color = RGB3::yellow;
@@ -196,4 +203,5 @@ void MidiController::setLabel(int sliderIndex, const CString& text) {
 	else {
 		sendDisplaySysEx(sliderIndex, RGB3::black, true, true, L"[OFF]", CString("[OFF]"));
 	}
+	previousLabels[sliderIndex] = text;
 }

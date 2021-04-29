@@ -4,6 +4,8 @@
 #include <memory>
 #include "RtMidi.h"
 
+#define SLIDER_COUNT 8
+
 class IMidiControllerEventReceiver {
 public:
 	virtual void OnMidiControllerDragged(int sliderIndex, float volume) = 0;
@@ -37,6 +39,7 @@ private:
 	std::unique_ptr<RtMidiIn> midiin;
 	std::unique_ptr<RtMidiOut> midiout;
 
+	CString previousLabels[SLIDER_COUNT];
 	void sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgroundTop, bool backgroundBot, const CString& txtTop, const CString& txtBot);
 
 	// Non-owned. Expected to outlive this object.

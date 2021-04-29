@@ -361,6 +361,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		slider->sid = sid;
 		slider->label = label;
 		slider->volumeFromSystem = volumeFromSystem;
+		slider->volumeIntent = volumeFromSystem;
 		slider->vuMeter = 0; // TODO
 	}
 
@@ -414,7 +415,10 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 		const Slider& slider = sliders[i];
 		CSliderCtrl& sliderControl = sliderControls[i];
 		CStatic& textControl = textControls[i];
-		float volume = (slider.systemVolumeUpdateTime > slider.dragStartTime) ? slider.volumeFromSystem : slider.volumeIntent;
+		float volume = slider.volumeIntent;
+		if (slider.systemVolumeUpdateTime > slider.dragEndTime) volume = slider.volumeFromSystem;
+		if (slider.dragStartTime > slider.dragEndTime) volume = slider.volumeIntent;
+		if (slider.sidUpdateTime > slider.dragStartTime) volume = slider.volumeFromSystem;
 
 		// GUI controls
 		if (slider.connected) {
@@ -539,6 +543,20 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		if (findSessionIndexBySid(sid) >= 0) {
 			continue; // we already have a CAudioSession for this.
 		}
+
+		DWORD pid = NULL;
+		int hr;
+		hr = pSessionControl2->GetProcessId(&pid);
+		if (hr == 143196173) hr = 0; // AUDCLNT_S_NO_CURRENT_PROCESS for explorer
+		CHECK_HR(hr);
+		CString label;
+		//CHECK_HR(hr = session->pSessionControl2->GetDisplayName(&label));
+		label = CString(GetProcName(pid).c_str());
+		if (label == "") {
+			TRACE("Found session already dead: %ls\n", sid);
+			continue;
+		}
+
 
 		std::unique_ptr<CAudioSession> session = std::make_unique<CAudioSession>();
 		session->sid = sid;
@@ -736,10 +754,17 @@ int CAudioSessionsMixerCDlg::findSliderIndexBySid(const LPWSTR& sid) {
 // Implement IMidiControllerEventReceiver
 
 void CAudioSessionsMixerCDlg::OnMidiControllerDragged(int sliderIndex, float volume) {
-	TRACE("OnMidiControllerDragged(%d, %f)\n", sliderIndex, volume);
+	//TRACE("OnMidiControllerDragged(%d, %f)\n", sliderIndex, volume);
+	Slider& slider = sliders[sliderIndex];
+	if (!slider.connected) {
+		midiController.setSliderPos(sliderIndex, 0);  // reset to off if the user tries to turn on a unconnected slider.
+		return;
+	}
+	slider.volumeIntent = volume;
+	OnVolumeIntent(slider);
 }
 void CAudioSessionsMixerCDlg::OnMidiControllerTouch(int sliderIndex, bool down) {
-	TRACE("OnTouch(sliderIndex=%d, %s)\n", sliderIndex, down ? "down" : "up");
+	//TRACE("OnTouch(sliderIndex=%d, %s)\n", sliderIndex, down ? "down" : "up");
 	Slider& slider = sliders[sliderIndex];
 	if (down) {
 		slider.dragStartTime = time(0);

@@ -24,6 +24,7 @@ struct Slider {
 	time_t sidUpdateTime;
 	time_t systemVolumeUpdateTime;
 	time_t dragStartTime;
+	time_t dragEndTime;
 };
 
 #pragma warning(pop)
