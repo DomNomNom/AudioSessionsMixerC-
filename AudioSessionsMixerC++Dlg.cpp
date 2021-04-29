@@ -628,6 +628,7 @@ void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pSc
 				float volumeIntent = 1 - float(sliderControl->GetPos() - sliderControl->GetRangeMin()) / float(sliderControl->GetRangeMax() - sliderControl->GetRangeMin());
 				slider.volumeIntent = volumeIntent;
 				slider.dragStartTime = time(0);  // FIXME: This should only be set on mouse down.
+				slider.dragEndTime = time(0);
 				OnVolumeIntent(slider);
 			}
 			else if (nPos != 0) {
@@ -739,4 +740,11 @@ void CAudioSessionsMixerCDlg::OnMidiControllerDragged(int sliderIndex, float vol
 }
 void CAudioSessionsMixerCDlg::OnMidiControllerTouch(int sliderIndex, bool down) {
 	TRACE("OnTouch(sliderIndex=%d, %s)\n", sliderIndex, down ? "down" : "up");
+	Slider& slider = sliders[sliderIndex];
+	if (down) {
+		slider.dragStartTime = time(0);
+	}
+	else {
+		slider.dragEndTime = time(0);
+	}
 }
