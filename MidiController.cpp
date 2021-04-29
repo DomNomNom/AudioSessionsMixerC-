@@ -111,6 +111,18 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 		}
 	}
 	TRACE("\n");
+
+	// Set rotary knobs to the middle position. (so the light is hidden behind the knob)
+	try {
+		for (int i = 0; i < SLIDER_COUNT; ++i) {
+			std::vector<unsigned char> message{ 176, (unsigned char)(80 + i), 64 };
+			midiout->sendMessage(&message);
+		}
+	}
+	catch (RtMidiError& error) {
+		TRACE("midiout error: %s\n", error.getMessage().c_str());
+	}
+
 }
 
 MidiController::~MidiController() {}
