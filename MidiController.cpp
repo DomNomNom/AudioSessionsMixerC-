@@ -190,7 +190,12 @@ void MidiController::sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgrou
 	}
 
 	message.push_back(0xf7);  // End of SysEx
-	midiout->sendMessage(&message);
+	try {
+		midiout->sendMessage(&message);
+	}
+	catch (RtMidiError& error) {
+		TRACE("midiout error: %s\n", error.getMessage().c_str());
+	}
 }
 
 void MidiController::setLabel(int sliderIndex, const CString& text_) {
@@ -238,5 +243,10 @@ void MidiController::setAudioMeter(int sliderIndex, float peak) {
 		unsigned char(90 + sliderIndex),
 		unsigned char(max(0, min(127, int(128 * peak))))
 	};
-	midiout->sendMessage(&message);
+	try {
+		midiout->sendMessage(&message);
+	}
+	catch (RtMidiError& error) {
+		TRACE("midiout error: %s\n", error.getMessage().c_str());
+	}
 }
