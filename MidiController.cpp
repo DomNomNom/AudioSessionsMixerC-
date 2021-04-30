@@ -46,9 +46,10 @@ void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userD
 }
 
 MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : eventReceiver(eventReceiver_) {
-
+	// Make sure the first calls aren't cached.
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		previousLabels[i] = L"nope...";
+		previousPeaks[i] = -1;
 	}
 
 	// RtMidiIn constructor
@@ -187,6 +188,9 @@ void MidiController::setLabel(int sliderIndex, const CString& text_) {
 	if (previousLabels[sliderIndex] == text_) {
 		return;
 	}
+	previousLabels[sliderIndex] = text_;
+
+
 	CString text = text_.Left(2 * DISPLAY_WD);
 	TRACE("setLabel(%d, %ls)\n", sliderIndex, text);
 	if (text != "") {
@@ -207,5 +211,23 @@ void MidiController::setLabel(int sliderIndex, const CString& text_) {
 	else {
 		sendDisplaySysEx(sliderIndex, RGB3::black, true, true, L"[OFF]", CString("[OFF]"));
 	}
-	previousLabels[sliderIndex] = text;
+}
+
+void MidiController::setAudioMeter(int sliderIndex, float peak) {
+	if (previousPeaks[sliderIndex] == peak) {
+		return;
+	}
+	previousPeaks[sliderIndex] = peak;
+
+	if (peak > 0) {
+		//TRACE("setAudioMeter(%d, %f)\n", sliderIndex, peak);
+		//peak = sqrt(peak);
+		peak = max(peak, .1); // if something is playing, display at least one bar.
+	}
+	std::vector<unsigned char> message{
+		176,
+		unsigned char(90 + sliderIndex),
+		unsigned char(max(0, min(127, int(128 * peak))))
+	};
+	midiout->sendMessage(&message);
 }

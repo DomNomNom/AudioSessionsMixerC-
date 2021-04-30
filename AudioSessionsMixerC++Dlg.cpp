@@ -19,6 +19,7 @@
 #define SLIDER_CONTROL_BASE_ID 2000
 #define STATIC_CONTROL_BASE_ID 3000
 #define DEAD_SESSION_TIMER_ID 1050
+#define AUDIO_METER_TIMER_ID 1051
 
 
 
@@ -253,6 +254,7 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	createSessionManager();
 	updateEverythingFromOS();
 	SetTimer(DEAD_SESSION_TIMER_ID, 433, NULL);
+	SetTimer(AUDIO_METER_TIMER_ID, 83, NULL);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -503,8 +505,11 @@ void CAudioSessionsMixerCDlg::OnPaint()
 }
 
 void CAudioSessionsMixerCDlg::OnDestroy() {
+	// turn off the lights.
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		midiController.setLabel(i, L"");
+		midiController.setAudioMeter(i, 0);
+		// leave the slider positions as they are.
 	}
 	CDialogEx::OnDestroy();
 }
@@ -540,6 +545,16 @@ void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
 	if (nIdEvent == DEAD_SESSION_TIMER_ID) {
 		if (!allSessionAlive(m_AudioSessionList)) {
 			updateEverythingFromOS();
+		}
+	}
+	else if (nIdEvent == AUDIO_METER_TIMER_ID) {
+		for (int i = 0; i < SLIDER_COUNT; ++i) {
+			if (!sliders[i].connected) continue;
+			int j = findSessionIndexBySid(sliders[i].sid);
+			float peak;
+			int hr;
+			CHECK_HR(hr = m_AudioSessionList[j]->pAudioMeterInformation->GetPeakValue(&peak));
+			midiController.setAudioMeter(i, peak);
 		}
 	}
 }
@@ -595,6 +610,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		session->sid = sid;
 		session->pSessionControl = pSessionControl;
 		session->pSessionControl2 = pSessionControl2;
+		session->pAudioMeterInformation = pAudioMeterInformation;
 		session->eventListener = std::make_unique<CAudioSessionEvents>(sid, (IDomsAudioSessionEvents*)(this));
 		CHECK_HR(hr = pSessionControl->RegisterAudioSessionNotification(session->eventListener.get()));
 

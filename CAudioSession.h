@@ -29,6 +29,7 @@ public:
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	ISimpleAudioVolume* pSessionVolumeCtrl;
+	IAudioMeterInformation* pAudioMeterInformation;
 
 	std::unique_ptr<CAudioSessionEvents> eventListener;
 };

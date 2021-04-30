@@ -34,6 +34,7 @@ public:
 
 	void setSliderPos(int sliderIndex, float volume);
 	void setLabel(int sliderIndex, const CString& txt);
+	void setAudioMeter(int sliderIndex, float peak);
 
 private:
 	std::unique_ptr<RtMidiIn> midiin;
@@ -41,6 +42,8 @@ private:
 
 	CString previousLabels[SLIDER_COUNT];
 	void sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgroundTop, bool backgroundBot, const CString& txtTop, const CString& txtBot);
+
+	float previousPeaks[SLIDER_COUNT];
 
 	// Non-owned. Expected to outlive this object.
 	IMidiControllerEventReceiver* eventReceiver;
