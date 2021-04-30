@@ -4,6 +4,7 @@
 #include<audiopolicy.h>
 #include<mmdeviceapi.h>
 #include<Audioclient.h>
+#include<endpointvolume.h>
 
 #include<atlstr.h>
 #include "CAudioSessionEvents.h"

@@ -191,6 +191,7 @@ BEGIN_MESSAGE_MAP(CAudioSessionsMixerCDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_WM_VSCROLL()
 	ON_WM_TIMER()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -501,6 +502,13 @@ void CAudioSessionsMixerCDlg::OnPaint()
 	}
 }
 
+void CAudioSessionsMixerCDlg::OnDestroy() {
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		midiController.setLabel(i, L"");
+	}
+	CDialogEx::OnDestroy();
+}
+
 // The system calls this function to obtain the cursor to display while the user drags
 // the minimized window.
 HCURSOR CAudioSessionsMixerCDlg::OnQueryDragIcon()
@@ -553,11 +561,15 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		// Get the <n>th session->
 		IAudioSessionControl* pSessionControl;
 		IAudioSessionControl2* pSessionControl2;
+		IAudioMeterInformation* pAudioMeterInformation;
+
 		CHECK_HR(hr = pSessionList->GetSession(i, &pSessionControl));
 		// pSessionControl->AddRef();
 		// Get the extended session control interface pointer.
 		CHECK_HR(hr = pSessionControl->QueryInterface(
 			__uuidof(IAudioSessionControl2), (void**)&pSessionControl2));
+		CHECK_HR(hr = pSessionControl->QueryInterface(
+			__uuidof(IAudioMeterInformation), (void**)&pAudioMeterInformation));
 
 		LPWSTR sid;
 		CHECK_HR(hr = pSessionControl2->GetSessionInstanceIdentifier(&sid));
