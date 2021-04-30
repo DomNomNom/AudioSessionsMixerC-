@@ -10,6 +10,14 @@
 
 #define SAFE_DELETE(a) if( (a) != NULL ) delete (a); (a) = NULL;
 
+// Allow for more resolution at lower volumes.
+const float biasPower = 2.5;
+float biasIntent(float intent) {
+	return pow(intent, biasPower);
+}
+float biasIntentInverse(float intent) {
+	return pow(intent, 1/ biasPower);
+}
 
 void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userData) {
 	std::stringstream debugMessage;
@@ -22,6 +30,7 @@ void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userD
 	unsigned char m0 = message->at(0);
 	unsigned char m1 = message->at(1);
 	unsigned char m2 = message->at(2);
+
 	if (m0 == 144) {  // slider touch down / touch up
 		int sliderIndex = m1 - 110;
 		if (0 <= sliderIndex && sliderIndex < 8) {
@@ -34,7 +43,7 @@ void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userD
 	else if (m0 == 176) { // slider move
 		int sliderIndex = m1 - 70;
 		if (0 <= sliderIndex && sliderIndex < 8) {
-			eventReceiver->OnMidiControllerDragged(sliderIndex, float(m2) / 127);
+			eventReceiver->OnMidiControllerDragged(sliderIndex, biasIntent(float(m2) / 127));
 		}
 		else {
 			TRACE("Unhandled MIDI message (might be slider move): %s\n", debugMessage.str().c_str());
@@ -136,7 +145,7 @@ void MidiController::setSliderPos(int sliderIndex, float volume) {
 	std::vector<unsigned char> message{
 		176,
 		unsigned char(70 + sliderIndex),
-		unsigned char(max(0, min(127, int(128 * volume))))
+		unsigned char(max(0, min(127, int(128 * biasIntentInverse(volume)))))
 	};
 	try {
 		midiout->sendMessage(&message);
