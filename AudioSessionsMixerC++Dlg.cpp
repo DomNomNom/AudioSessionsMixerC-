@@ -551,6 +551,7 @@ void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
 		for (int i = 0; i < SLIDER_COUNT; ++i) {
 			if (!sliders[i].connected) continue;
 			int j = findSessionIndexBySid(sliders[i].sid);
+			if (j < 0) continue;
 			float peak;
 			int hr;
 			CHECK_HR(hr = m_AudioSessionList[j]->pAudioMeterInformation->GetPeakValue(&peak));
