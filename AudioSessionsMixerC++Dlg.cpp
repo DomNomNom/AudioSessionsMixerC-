@@ -283,6 +283,11 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		//if (!isSessionActive(*m_AudioSessionList[i])) slider.connected = false;
 	}
 
+	float maxSliderVolume = 0;  // max volume across all sliders.
+	for (const Slider& slider : sliders) {
+		maxSliderVolume = max(maxSliderVolume, slider.connected ? slider.volumeFromSystem : 0);
+	}
+
 	// Connect sliders to audio dessions.
 	// Iterate backwards as we may be removing dead sessions.
 	for (int j = int(m_AudioSessionList.size()) - 1; j >= 0; --j) {
@@ -304,6 +309,20 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			stillConnected[i] = true;
 		}
 
+		float volumeFromSystem = 0;
+		BOOL mute;
+		int hr;
+		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMute(&mute));
+		if (!mute) {
+			CHECK_HR(hr = session->pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
+		}
+
+		// new or excess applications shouldn't be allowed to be louder than the loudest app.
+		if (maxSliderVolume > 0 && slider == NULL && volumeFromSystem > maxSliderVolume) {
+			session->pSessionVolumeCtrl->SetMasterVolume(maxSliderVolume, NULL);
+			volumeFromSystem = maxSliderVolume;
+		}
+
 		// No matching one? Find a free slot.
 		if (slider == NULL) {
 			for (int i = 0; i < SLIDER_COUNT; ++i) {
@@ -316,6 +335,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			}
 		}
 
+
 		// No free slot? Too bad. Ignore it.
 		if (slider == NULL) {
 			TRACE("Out of sliders for sid %ls\n", sid);
@@ -323,7 +343,6 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		}
 
 		DWORD pid = NULL;
-		int hr;
 		hr = session->pSessionControl2->GetProcessId(&pid);
 		if (hr == 143196173) hr = 0; // AUDCLNT_S_NO_CURRENT_PROCESS for explorer
 		CHECK_HR(hr);
@@ -343,13 +362,6 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		}
 
 		if (wcscmp(slider->label, label)) isSidUpdate = true;
-
-		float volumeFromSystem = 0;
-		BOOL mute;
-		CHECK_HR(hr = session->pSessionVolumeCtrl->GetMute(&mute));
-		if (!mute) {
-			CHECK_HR(hr = session->pSessionVolumeCtrl->GetMasterVolume(&volumeFromSystem));
-		}
 
 		if (label == "") {
 			TRACE("bad label: slider pid=%d sid=%ls len=%d", pid, sid);
@@ -434,10 +446,15 @@ void CAudioSessionsMixerCDlg::updateControlsFromSliders() {
 			lazyUpdateSliderControl(sliderControl, sliderControl.GetRangeMax());
 		}
 
-		midiController.setLabel(i, slider.label);
-
 		// MIDI controls
-		midiController.setSliderPos(i, volume);
+		if (slider.connected) {
+			midiController.setLabel(i, slider.label);
+			midiController.setSliderPos(i, volume);
+		}
+		else {
+			midiController.setLabel(i, L"");
+			midiController.setSliderPos(i, 0);
+		}
 	}
 }
 
@@ -493,13 +510,17 @@ HCURSOR CAudioSessionsMixerCDlg::OnQueryDragIcon()
 
 bool allSessionAlive(const std::vector<std::unique_ptr<CAudioSession>>& m_AudioSessionList) {
 	for (const auto& session : m_AudioSessionList) {
+		if (!session) {
+			TRACE("WTF\n");
+			continue;
+		}
 		DWORD pid = NULL;
 		int hr;
 		hr = session->pSessionControl2->GetProcessId(&pid);
 		if (hr == 143196173) hr = 0; // AUDCLNT_S_NO_CURRENT_PROCESS expected for explorer
 		CHECK_HR(hr);
 		if (GetProcName(pid) == L"") {  // AUDCLNT_S_NO_CURRENT_PROCESS 
-			TRACE("Detected dead session: hr=%d sid=%ls\n", hr, session->sid);
+			// TRACE("Detected dead session: hr=%d sid=%ls\n", hr, session->sid);
 			return false;
 		}
 	}
@@ -553,7 +574,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		//CHECK_HR(hr = session->pSessionControl2->GetDisplayName(&label));
 		label = CString(GetProcName(pid).c_str());
 		if (label == "") {
-			TRACE("Found session already dead: %ls\n", sid);
+			//TRACE("Found session already dead: %ls\n", sid);
 			continue;
 		}
 
@@ -691,6 +712,7 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
 	switch (NewState)
 	{
 	case AudioSessionStateActive:
+		updateEverythingFromOS();
 		pszState = "active";
 		break;
 	case AudioSessionStateInactive:
@@ -702,7 +724,6 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
 	}
 	//TRACE("New_session_state=%s sid=%ls\n", pszState, sid);
 
-	updateEverythingFromOS();
 	return S_OK;
 }
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(

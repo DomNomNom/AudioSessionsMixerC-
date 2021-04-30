@@ -183,10 +183,11 @@ void MidiController::sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgrou
 	midiout->sendMessage(&message);
 }
 
-void MidiController::setLabel(int sliderIndex, const CString& text) {
-	if (previousLabels[sliderIndex] == text) {
+void MidiController::setLabel(int sliderIndex, const CString& text_) {
+	if (previousLabels[sliderIndex] == text_) {
 		return;
 	}
+	CString text = text_.Left(2 * DISPLAY_WD);
 	TRACE("setLabel(%d, %ls)\n", sliderIndex, text);
 	if (text != "") {
 		RGB3 color = RGB3::white;
@@ -195,6 +196,9 @@ void MidiController::setLabel(int sliderIndex, const CString& text) {
 		if (text == "mumble") color = RGB3::green;
 		if (text == "steam") color = RGB3::cyan;
 		if (text == "Discord") color = RGB3::cyan;
+
+		if (text == "foobar2000") text = "foobar 2000";
+		if (text == "explorer") text = "explore";
 
 		CString txtTop = text.Left(DISPLAY_WD);
 		CString txtBot = text.Right(text.GetLength() - DISPLAY_WD);
