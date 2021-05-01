@@ -16,7 +16,7 @@ float biasIntent(float intent) {
 	return pow(intent, biasPower);
 }
 float biasIntentInverse(float intent) {
-	return pow(intent, 1/ biasPower);
+	return pow(intent, 1 / biasPower);
 }
 
 void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userData) {
@@ -59,6 +59,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		previousLabels[i] = L"nope...";
 		previousPeaks[i] = -1;
+		previousSliderPositions[i] = -1;
 	}
 
 	// RtMidiIn constructor
@@ -141,6 +142,11 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 MidiController::~MidiController() {}
 
 void MidiController::setSliderPos(int sliderIndex, float volume) {
+	if (previousSliderPositions[sliderIndex] == volume) {
+		return;
+	}
+	previousSliderPositions[sliderIndex] = volume;
+
 	//controllerEvent(1, vo.midi_channel, max(0, min(127, int(128 * vo.display)))
 	std::vector<unsigned char> message{
 		176,

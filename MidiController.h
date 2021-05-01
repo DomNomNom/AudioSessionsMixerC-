@@ -40,10 +40,12 @@ private:
 	std::unique_ptr<RtMidiIn> midiin;
 	std::unique_ptr<RtMidiOut> midiout;
 
-	CString previousLabels[SLIDER_COUNT];
 	void sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgroundTop, bool backgroundBot, const CString& txtTop, const CString& txtBot);
 
+	// Caching to not redo thing that were already done
+	CString previousLabels[SLIDER_COUNT];
 	float previousPeaks[SLIDER_COUNT];
+	float previousSliderPositions[SLIDER_COUNT];
 
 	// Non-owned. Expected to outlive this object.
 	IMidiControllerEventReceiver* eventReceiver;
