@@ -274,6 +274,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 	bool stillConnected[SLIDER_COUNT];
 	for (int i = 0; i < SLIDER_COUNT; ++i) stillConnected[i] = false;
 
+
 	// Validate that existing sliders still make sense to be connected.
 	for (Slider& slider : sliders) {
 		if (!slider.connected) continue;
@@ -355,6 +356,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		label = CString(GetProcName(pid).c_str());
 		if (label == "") {
 			TRACE("Removing dead session: %ls", sid);
+			std::unique_lock<std::shared_mutex> lock(audioSessionsMutex);
 			audioSessions.erase(audioSessions.begin() + j);
 			slider->connected = false;
 			continue;
@@ -521,7 +523,8 @@ HCURSOR CAudioSessionsMixerCDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-bool allSessionAlive(const std::vector<std::unique_ptr<CAudioSession>>& audioSessions) {
+bool CAudioSessionsMixerCDlg::allSessionAlive() {
+	std::shared_lock<std::shared_mutex> lock(audioSessionsMutex);
 	for (const auto& session : audioSessions) {
 		if (!session) {
 			TRACE("WTF\n");
@@ -543,7 +546,7 @@ bool allSessionAlive(const std::vector<std::unique_ptr<CAudioSession>>& audioSes
 void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
 {
 	if (nIdEvent == DEAD_SESSION_TIMER_ID) {
-		if (!allSessionAlive(audioSessions)) {
+		if (!allSessionAlive()) {
 			updateEverythingFromOS();
 		}
 	}
@@ -624,7 +627,10 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		//DWORD id = NULL;
 		//CHECK_HR(hr = session->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
-		audioSessions.push_back(std::move(session));
+		{
+			std::unique_lock<std::shared_mutex> lock(audioSessionsMutex);
+			audioSessions.push_back(std::move(session));
+		}
 
 		//CString str = L"";
 		//HWND hwndo = NULL;//;
@@ -761,6 +767,7 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
 	TRACE("Dom has never seen OnSessionDisconnected() being fired. why is it working now?");
 	int i = findSessionIndexBySid(sid);
 	if (i >= 0) {
+		std::unique_lock<std::shared_mutex> lock(audioSessionsMutex);
 		audioSessions.erase(audioSessions.begin() + i);
 	}
 	else {
@@ -777,6 +784,8 @@ HRESULT CAudioSessionsMixerCDlg::OnSessionCreated(IAudioSessionControl* pNewSess
 
 // Things for finding stuff by sid's.
 int CAudioSessionsMixerCDlg::findSessionIndexBySid(const LPWSTR& sid) {
+	std::shared_lock<std::shared_mutex> lock(audioSessionsMutex);
+
 	size_t size = audioSessions.size();
 	for (int i = 0; i < size; ++i) {
 		int j = (lastFoundSessionIndex + i) % size;

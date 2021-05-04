@@ -4,9 +4,11 @@
 
 #pragma once
 
-#include"CAudioSession.h"
-#include<vector>
-#include<memory>
+#include "CAudioSession.h"
+#include <vector>
+#include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include "Slider.h"
 
 #include"IDomsAudioSessionEvents.h"
@@ -51,7 +53,9 @@ private:
 	IAudioSessionControl2* pSessionControl2;
 	IAudioSessionManager2* pSessionManager;
 	CSessionNotifications pSessionNotifications;
+
 	std::vector<std::unique_ptr<CAudioSession>> audioSessions;
+	mutable std::shared_mutex audioSessionsMutex;
 
 	void createSessionManager();
 
@@ -104,6 +108,7 @@ private:
 	int lastFoundSessionIndex;
 	int lastFoundSliderIndex;
 
+	bool allSessionAlive();
 
 	// MIDI device
 private:
