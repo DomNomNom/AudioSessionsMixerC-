@@ -283,7 +283,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			slider.connected = false;
 			continue;
 		}
-		//if (!isSessionActive(*m_AudioSessionList[i])) slider.connected = false;
+		//if (!isSessionActive(*audioSessions[i])) slider.connected = false;
 	}
 
 	float maxSliderVolume = 0;  // max volume across all sliders.
@@ -293,8 +293,8 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 
 	// Connect sliders to audio dessions.
 	// Iterate backwards as we may be removing dead sessions.
-	for (int j = int(m_AudioSessionList.size()) - 1; j >= 0; --j) {
-		const auto& session = m_AudioSessionList[j];
+	for (int j = int(audioSessions.size()) - 1; j >= 0; --j) {
+		const auto& session = audioSessions[j];
 
 		const LPWSTR& sid = session->sid;
 		if (sid == NULL) {
@@ -355,7 +355,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		label = CString(GetProcName(pid).c_str());
 		if (label == "") {
 			TRACE("Removing dead session: %ls", sid);
-			m_AudioSessionList.erase(m_AudioSessionList.begin() + j);
+			audioSessions.erase(audioSessions.begin() + j);
 			slider->connected = false;
 			continue;
 		}
@@ -521,8 +521,8 @@ HCURSOR CAudioSessionsMixerCDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-bool allSessionAlive(const std::vector<std::unique_ptr<CAudioSession>>& m_AudioSessionList) {
-	for (const auto& session : m_AudioSessionList) {
+bool allSessionAlive(const std::vector<std::unique_ptr<CAudioSession>>& audioSessions) {
+	for (const auto& session : audioSessions) {
 		if (!session) {
 			TRACE("WTF\n");
 			continue;
@@ -543,7 +543,7 @@ bool allSessionAlive(const std::vector<std::unique_ptr<CAudioSession>>& m_AudioS
 void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
 {
 	if (nIdEvent == DEAD_SESSION_TIMER_ID) {
-		if (!allSessionAlive(m_AudioSessionList)) {
+		if (!allSessionAlive(audioSessions)) {
 			updateEverythingFromOS();
 		}
 	}
@@ -554,7 +554,7 @@ void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
 			if (j < 0) continue;
 			float peak;
 			int hr;
-			CHECK_HR(hr = m_AudioSessionList[j]->pAudioMeterInformation->GetPeakValue(&peak));
+			CHECK_HR(hr = audioSessions[j]->pAudioMeterInformation->GetPeakValue(&peak));
 			midiController.setAudioMeter(i, peak);
 		}
 	}
@@ -624,7 +624,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		//DWORD id = NULL;
 		//CHECK_HR(hr = session->pSessionControl2->GetProcessId(&id));//audio session owner process id  
 
-		m_AudioSessionList.push_back(std::move(session));
+		audioSessions.push_back(std::move(session));
 
 		//CString str = L"";
 		//HWND hwndo = NULL;//;
@@ -679,7 +679,7 @@ void CAudioSessionsMixerCDlg::OnVolumeIntent(const Slider& slider) {
 		TRACE("OnVolumeIntent could not find corresponding session for slider %ls\n", slider.sid);
 		return;
 	}
-	m_AudioSessionList[i]->pSessionVolumeCtrl->SetMasterVolume(slider.volumeIntent, NULL);
+	audioSessions[i]->pSessionVolumeCtrl->SetMasterVolume(slider.volumeIntent, NULL);
 }
 
 void CAudioSessionsMixerCDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
@@ -761,7 +761,7 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
 	TRACE("Dom has never seen OnSessionDisconnected() being fired. why is it working now?");
 	int i = findSessionIndexBySid(sid);
 	if (i >= 0) {
-		m_AudioSessionList.erase(m_AudioSessionList.begin() + i);
+		audioSessions.erase(audioSessions.begin() + i);
 	}
 	else {
 		TRACE("session disconnected twice? %d", sid);
@@ -777,10 +777,10 @@ HRESULT CAudioSessionsMixerCDlg::OnSessionCreated(IAudioSessionControl* pNewSess
 
 // Things for finding stuff by sid's.
 int CAudioSessionsMixerCDlg::findSessionIndexBySid(const LPWSTR& sid) {
-	size_t size = m_AudioSessionList.size();
+	size_t size = audioSessions.size();
 	for (int i = 0; i < size; ++i) {
 		int j = (lastFoundSessionIndex + i) % size;
-		const std::unique_ptr<CAudioSession>& session = m_AudioSessionList[j];
+		const std::unique_ptr<CAudioSession>& session = audioSessions[j];
 		if (wcscmp(session->sid, sid) == 0) {
 			lastFoundSessionIndex = j;
 			return j;

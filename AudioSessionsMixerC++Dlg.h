@@ -51,7 +51,7 @@ private:
 	IAudioSessionControl2* pSessionControl2;
 	IAudioSessionManager2* pSessionManager;
 	CSessionNotifications pSessionNotifications;
-	std::vector<std::unique_ptr<CAudioSession>> m_AudioSessionList;
+	std::vector<std::unique_ptr<CAudioSession>> audioSessions;
 
 	void createSessionManager();
 
@@ -59,7 +59,7 @@ private:
 		updateSessionsFromManager();
 		updateSlidersFromSessions();
 		updateControlsFromSliders();
-		TRACE("updateEverythingFromOS finished with %d sessions.\n", m_AudioSessionList.size());
+		TRACE("updateEverythingFromOS finished with %d sessions.\n", audioSessions.size());
 	}
 	void updateSessionsFromManager();
 	void updateSlidersFromSessions();
