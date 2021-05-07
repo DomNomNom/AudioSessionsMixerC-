@@ -126,16 +126,22 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 	}
 	TRACE("\n");
 
-	// Set rotary knobs to the middle position. (so the light is hidden behind the knob)
-	try {
-		for (int i = 0; i < SLIDER_COUNT; ++i) {
-			std::vector<unsigned char> message{ 176, (unsigned char)(80 + i), 64 };
+
+	for (int i = 0; i < SLIDER_COUNT; ++i) {
+		// Set rotary knobs to the middle position. (so the light is hidden behind the knob)
+		std::vector<unsigned char> message{ 176, (unsigned char)(80 + i), 64 };
+		try {
 			midiout->sendMessage(&message);
 		}
+		catch (RtMidiError& error) {
+			TRACE("midiout error: %s\n", error.getMessage().c_str());
+		}
+
+		// Set everything to zero
+		setLabel(i, L"");
+		setAudioMeter(i, 0);
 	}
-	catch (RtMidiError& error) {
-		TRACE("midiout error: %s\n", error.getMessage().c_str());
-	}
+
 
 }
 
@@ -215,14 +221,13 @@ void MidiController::setLabel(int sliderIndex, const CString& text_) {
 	TRACE("setLabel(%d, %ls)\n", sliderIndex, text);
 	if (text != "") {
 		RGB3 color = RGB3::white;
-		if (text == "explorer") color = RGB3::yellow;
+		if (text == "System") color = RGB3::green;
 		if (text == "firefox") color = RGB3::yellow;
 		if (text == "mumble") color = RGB3::green;
-		if (text == "steam") color = RGB3::cyan;
+		if (text == "steam") color = RGB3::blue;
 		if (text == "Discord") color = RGB3::cyan;
 
 		if (text == "foobar2000") text = "foobar 2000";
-		if (text == "explorer") text = "explore";
 
 		CString txtTop = text.Left(DISPLAY_WD);
 		CString txtBot = text.Right(text.GetLength() - DISPLAY_WD);
@@ -239,15 +244,31 @@ void MidiController::setAudioMeter(int sliderIndex, float peak) {
 	}
 	previousPeaks[sliderIndex] = peak;
 
+	// We have 9 values: Off (Using that for exactly zero), and 8 LEDs
+	unsigned char ledVal = 0;
 	if (peak > 0) {
-		//TRACE("setAudioMeter(%d, %f)\n", sliderIndex, peak);
-		//peak = sqrt(peak);
-		peak = max(peak, .1); // if something is playing, display at least one bar.
+		// how much each bar should take up proportionally of the 0..1 peak range.
+		// One weight entry per LED.
+		float weights[] = { .3, 2, 4, 6, 6, 4, 2, .3, };
+		float totalWeight = 0;
+		for (float& w : weights) totalWeight += w;
+		for (float& w : weights) w /= totalWeight;
+
+		totalWeight = 0;
+		int i = 0;
+		for (const float& w : weights) {
+			totalWeight += w;
+			if (totalWeight > peak) {
+				break;
+			}
+			i += 1;
+		}
+		ledVal = unsigned char(8 + i * 16);  // This is ugly but works.
 	}
 	std::vector<unsigned char> message{
 		176,
 		unsigned char(90 + sliderIndex),
-		unsigned char(max(0, min(127, int(128 * peak))))
+		ledVal
 	};
 	try {
 		midiout->sendMessage(&message);

@@ -3,10 +3,12 @@
 
 CAudioSession::CAudioSession()
 {
+	sid = L"";
+	state = AudioSessionState::AudioSessionStateInactive;
 	pSessionControl = NULL;
 	pSessionControl2 = NULL;
 	pSessionVolumeCtrl = NULL;
-	sid = L"";
+	pAudioMeterInformation = NULL;
 }
 
 CAudioSession::~CAudioSession()

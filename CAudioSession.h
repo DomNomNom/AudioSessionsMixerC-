@@ -24,8 +24,8 @@ public:
 public:
 
 	LPWSTR sid;  // Session identifier from pSessionControl2
+	AudioSessionState state;
 
-	// These are all owning pointers.
 	IAudioSessionControl* pSessionControl;
 	IAudioSessionControl2* pSessionControl2;
 	ISimpleAudioVolume* pSessionVolumeCtrl;

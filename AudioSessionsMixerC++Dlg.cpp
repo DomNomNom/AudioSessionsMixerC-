@@ -259,16 +259,6 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
-bool isSessionActive(const CAudioSession& session) {
-	// Active means that the 
-	AudioSessionState state;
-	int hr = session.pSessionControl->GetState(&state);
-	if (hr != S_OK) {
-		TRACE("Bad hr from session.pSessionControl->GetState(): %d", hr);
-		return false;
-	}
-	return state == AudioSessionStateActive;
-}
 
 void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 	bool stillConnected[SLIDER_COUNT];
@@ -361,6 +351,11 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			slider->connected = false;
 			continue;
 		}
+		else if (label == "[System Process]" || label == "explorer.exe") {
+			label = "System";
+		}
+
+
 		if (label.GetLength() > 4) {
 			CString extension = label.Right(4);
 			if (extension == ".exe") label = label.Left(label.GetLength() - 4);
@@ -390,8 +385,8 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		}
 	}
 
-	SwapSliderToPreferredIndex(L"explorer", 0);
-	SwapSliderToPreferredIndex(L"firefox", 1);
+	SwapSliderToPreferredIndex(L"System", 0);
+	SwapSliderToPreferredIndex(L"firefox", 7);
 }
 
 void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int preferredIndex) {
@@ -551,14 +546,21 @@ void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
 		}
 	}
 	else if (nIdEvent == AUDIO_METER_TIMER_ID) {
+		std::shared_lock<std::shared_mutex> lock(audioSessionsMutex);  // don't change the meaning of `j`.
 		for (int i = 0; i < SLIDER_COUNT; ++i) {
 			if (!sliders[i].connected) continue;
 			int j = findSessionIndexBySid(sliders[i].sid);
 			if (j < 0) continue;
-			float peak;
-			int hr;
-			CHECK_HR(hr = audioSessions[j]->pAudioMeterInformation->GetPeakValue(&peak));
-			midiController.setAudioMeter(i, peak);
+			auto& session = audioSessions[j];
+			if (session->state == AudioSessionState::AudioSessionStateActive) {
+				int hr;
+				float peak;
+				CHECK_HR(hr = session->pAudioMeterInformation->GetPeakValue(&peak));
+				midiController.setAudioMeter(i, peak);
+			}
+			else {
+				midiController.setAudioMeter(i, 0);
+			}
 		}
 	}
 }
@@ -617,6 +619,8 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		session->pAudioMeterInformation = pAudioMeterInformation;
 		session->eventListener = std::make_unique<CAudioSessionEvents>(sid, (IDomsAudioSessionEvents*)(this));
 		CHECK_HR(hr = pSessionControl->RegisterAudioSessionNotification(session->eventListener.get()));
+		CHECK_HR(hr = pSessionControl->GetState(&session->state));
+
 
 		// get session volume control
 		CHECK_HR(hr = session->pSessionControl->QueryInterface(__uuidof(ISimpleAudioVolume),
@@ -633,7 +637,7 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 		}
 
 		//CString str = L"";
-		//HWND hwndo = NULL;//;
+		//HWND hwndo = NULL;
 		//int i=GetWindowTextA(GetWindowHandleFromProcessID(id), LPSTR(str.GetString()), NULL);
 	}
 }
@@ -742,22 +746,14 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSimpleVolumeChanged(
 HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnStateChanged(
 	const LPWSTR& sid,
 	AudioSessionState NewState) {
-	char* pszState = "?????";
-
-	switch (NewState)
-	{
-	case AudioSessionStateActive:
-		updateEverythingFromOS();
-		pszState = "active";
-		break;
-	case AudioSessionStateInactive:
-		pszState = "inactive";
-		break;
-	case AudioSessionStateExpired:
-		pszState = "expired";
-		break;
+	std::shared_lock<std::shared_mutex> lock(audioSessionsMutex);
+	int i = findSessionIndexBySid(sid);
+	if (i >= 0) {
+		audioSessions[i]->state = NewState;
 	}
-	//TRACE("New_session_state=%s sid=%ls\n", pszState, sid);
+	else {
+		TRACE("session not found: %ls", sid);
+	}
 
 	return S_OK;
 }
@@ -771,7 +767,7 @@ HRESULT STDMETHODCALLTYPE CAudioSessionsMixerCDlg::OnSessionDisconnected(
 		audioSessions.erase(audioSessions.begin() + i);
 	}
 	else {
-		TRACE("session disconnected twice? %d", sid);
+		TRACE("session disconnected twice? %ls", sid);
 	}
 	updateEverythingFromOS();
 	return S_OK;
