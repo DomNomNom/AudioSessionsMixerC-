@@ -248,8 +248,9 @@ void MidiController::setAudioMeter(int sliderIndex, float peak) {
 	unsigned char ledVal = 0;
 	if (peak > 0) {
 		// how much each bar should take up proportionally of the 0..1 peak range.
+		// Note that this implies that smaller values will be more sensitive to changes in the peak value.
 		// One weight entry per LED.
-		float weights[] = { .3, 2, 4, 6, 6, 4, 2, .3, };
+		float weights[] = { .3, 1, 2, 4, 6, 4, 2, .3, };
 		float totalWeight = 0;
 		for (float& w : weights) totalWeight += w;
 		for (float& w : weights) w /= totalWeight;
