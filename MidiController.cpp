@@ -22,7 +22,9 @@ float biasIntentInverse(float intent) {
 void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userData) {
 	std::stringstream debugMessage;
 	std::copy(message->begin(), message->end(), std::ostream_iterator<int>(debugMessage, " "));
-	IMidiControllerEventReceiver* eventReceiver = static_cast<IMidiControllerEventReceiver*> (userData);
+	MidiController* this_ = static_cast<MidiController*>(userData);
+	IMidiControllerEventReceiver* eventReceiver = this_->eventReceiver;
+	//IMidiControllerEventReceiver* eventReceiver = static_cast<IMidiControllerEventReceiver*> (userData);
 
 	if (message->size() != 3) {
 		TRACE("Got a message with weird length: %s\n", debugMessage.str().c_str());
@@ -41,9 +43,21 @@ void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userD
 		}
 	}
 	else if (m0 == 176) { // slider move
-		int sliderIndex = m1 - 70;
+		int sliderIndex = m1 - 70; // slider move
+		int knobIndex = m1 - 80;
 		if (0 <= sliderIndex && sliderIndex < 8) {
 			eventReceiver->OnMidiControllerDragged(sliderIndex, biasIntent(float(m2) / 127));
+		}
+		else if (0 <= knobIndex && knobIndex < 8) {
+			eventReceiver->OnMidiControllerKnob(knobIndex, m2 > 64);
+			std::vector<unsigned char> message{ 176, m1, 64 };  // reset to center
+			try {
+				this_->midiout->sendMessage(&message);
+			}
+			catch (RtMidiError& error) {
+				TRACE("midiout error: %s\n", error.getMessage().c_str());
+			}
+
 		}
 		else {
 			TRACE("Unhandled MIDI message (might be slider move): %s\n", debugMessage.str().c_str());
@@ -70,7 +84,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 		TRACE("midiout error: %s", error.getMessage().c_str());
 		return;
 	}
-	midiin->setCallback(&OnMidiin, eventReceiver);
+	midiin->setCallback(&OnMidiin, this);
 	// Try find our MidiIn device.
 	unsigned int nPorts = midiin->getPortCount();
 	TRACE("There are %d MIDI input sources available.\n", nPorts);
@@ -250,7 +264,7 @@ void MidiController::setAudioMeter(int sliderIndex, float peak) {
 		// how much each bar should take up proportionally of the 0..1 peak range.
 		// Note that this implies that smaller values will be more sensitive to changes in the peak value.
 		// One weight entry per LED.
-		float weights[] = { .3, 1, 2, 4, 6, 4, 2, .3, };
+		float weights[] = { .3f, 1, 2, 4, 6, 4, 2, .3f, };
 		float totalWeight = 0;
 		for (float& w : weights) totalWeight += w;
 		for (float& w : weights) w /= totalWeight;

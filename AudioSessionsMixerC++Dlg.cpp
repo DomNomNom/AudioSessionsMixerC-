@@ -329,7 +329,6 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			}
 		}
 
-
 		// No free slot? Too bad. Ignore it.
 		if (slider == NULL) {
 			TRACE("Out of sliders for sid %ls\n", sid);
@@ -827,4 +826,12 @@ void CAudioSessionsMixerCDlg::OnMidiControllerTouch(int sliderIndex, bool down) 
 	else {
 		slider.dragEndTime = time(0);
 	}
+}
+void CAudioSessionsMixerCDlg::OnMidiControllerKnob(int sliderIndex, bool clockwise) {
+	TRACE("YO %d\n", clockwise);
+	std::swap(
+		sliders[sliderIndex],
+		sliders[(sliderIndex + (clockwise ? 1 : -1) + SLIDER_COUNT) % SLIDER_COUNT]
+	);
+	updateControlsFromSliders();
 }

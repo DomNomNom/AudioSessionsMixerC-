@@ -116,5 +116,6 @@ private:
 public:  // Implement MidiControllerEventReceiver
 	void OnMidiControllerDragged(int sliderIndex, float volume);
 	void CAudioSessionsMixerCDlg::OnMidiControllerTouch(int sliderIndex, bool down);
+	void OnMidiControllerKnob(int sliderIndex, bool clockwise);
 
 };

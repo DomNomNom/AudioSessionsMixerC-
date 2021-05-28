@@ -10,6 +10,7 @@ class IMidiControllerEventReceiver {
 public:
 	virtual void OnMidiControllerDragged(int sliderIndex, float volume) = 0;
 	virtual void OnMidiControllerTouch(int sliderIndex, bool down) = 0;
+	virtual void OnMidiControllerKnob(int sliderIndex, bool clockwise) = 0;
 };
 
 enum RGB3 {
@@ -36,9 +37,12 @@ public:
 	void setLabel(int sliderIndex, const CString& txt);
 	void setAudioMeter(int sliderIndex, float peak);
 
+public: // should be private but I couldn't figure out how to properly do it. maybe with friends...
+	IMidiControllerEventReceiver* eventReceiver;  // Non-owned. Expected to outlive this object.
+	std::unique_ptr<RtMidiOut> midiout;
+
 private:
 	std::unique_ptr<RtMidiIn> midiin;
-	std::unique_ptr<RtMidiOut> midiout;
 
 	void sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgroundTop, bool backgroundBot, const CString& txtTop, const CString& txtBot);
 
@@ -47,6 +51,4 @@ private:
 	float previousPeaks[SLIDER_COUNT];
 	float previousSliderPositions[SLIDER_COUNT];
 
-	// Non-owned. Expected to outlive this object.
-	IMidiControllerEventReceiver* eventReceiver;
 };
