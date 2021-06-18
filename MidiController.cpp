@@ -101,7 +101,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 		if (portName == "X-Touch-Ext 0") {
 			TRACE("    using this one.\n");
 			midiin->openPort(i, portName);
-			break;
+			//break;
 		}
 	}
 	TRACE("\n");
@@ -135,7 +135,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 				TRACE("midiout error: %s", error.getMessage().c_str());
 				break;
 			}
-			break;
+			//break;
 		}
 	}
 	TRACE("\n");
@@ -232,7 +232,6 @@ void MidiController::setLabel(int sliderIndex, const CString& text_) {
 
 
 	CString text = text_.Left(2 * DISPLAY_WD);
-	TRACE("setLabel(%d, %ls)\n", sliderIndex, text);
 	if (text != "") {
 		RGB3 color = RGB3::white;
 		if (text == "System") color = RGB3::green;
@@ -280,6 +279,8 @@ void MidiController::setAudioMeter(int sliderIndex, float peak) {
 		}
 		ledVal = unsigned char(8 + i * 16);  // This is ugly but works.
 	}
+	//if (previousPeakLedVals[sliderIndex])
+
 	std::vector<unsigned char> message{
 		176,
 		unsigned char(90 + sliderIndex),

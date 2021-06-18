@@ -12,6 +12,10 @@
 #include <utility>
 #include <WinUser.h>
 
+#include <iostream>
+#include <fstream>
+
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -260,6 +264,20 @@ BOOL CAudioSessionsMixerCDlg::OnInitDialog()
 }
 
 
+void saveSliders(const Slider(&sliders)[SLIDER_COUNT]) {
+	// writes the sliders to disk.
+	std::ofstream f;
+	f.open("slider_preferences.txt");
+	for (const Slider& slider : sliders) {
+		if (slider.connected) {
+			f << CT2A(slider.label) << " | " << slider.sid;
+		}
+		f << "\n";
+	}
+	f.close();
+};
+
+
 void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 	bool stillConnected[SLIDER_COUNT];
 	for (int i = 0; i < SLIDER_COUNT; ++i) stillConnected[i] = false;
@@ -386,6 +404,7 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 
 	SwapSliderToPreferredIndex(L"System", 0);
 	SwapSliderToPreferredIndex(L"firefox", 7);
+	saveSliders(sliders);
 }
 
 void CAudioSessionsMixerCDlg::SwapSliderToPreferredIndex(CString label, int preferredIndex) {
@@ -828,10 +847,10 @@ void CAudioSessionsMixerCDlg::OnMidiControllerTouch(int sliderIndex, bool down) 
 	}
 }
 void CAudioSessionsMixerCDlg::OnMidiControllerKnob(int sliderIndex, bool clockwise) {
-	TRACE("YO %d\n", clockwise);
-	std::swap(
+	std::swap(  // swap left or righ, with wrapping
 		sliders[sliderIndex],
 		sliders[(sliderIndex + (clockwise ? 1 : -1) + SLIDER_COUNT) % SLIDER_COUNT]
 	);
+	saveSliders(sliders);
 	updateControlsFromSliders();
 }
