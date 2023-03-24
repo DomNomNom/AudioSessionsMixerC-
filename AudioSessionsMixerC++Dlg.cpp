@@ -359,7 +359,6 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 		CHECK_HR(hr);
 
 		CString label;
-		//CHECK_HR(hr = session->pSessionControl2->GetDisplayName(&label));
 		label = CString(GetProcName(pid).c_str());
 		if (label == "") {
 			TRACE("Removing dead session: %ls", sid);
@@ -368,8 +367,15 @@ void CAudioSessionsMixerCDlg::updateSlidersFromSessions() {
 			slider->connected = false;
 			continue;
 		}
-		else if (label == "[System Process]" || label == "explorer.exe") {
+			
+		if (label == "[System Process]" || label == "explorer.exe") {
 			label = "System";
+		}
+
+		LPWSTR label_;
+		CHECK_HR(hr = session->pSessionControl->GetDisplayName(&label_));
+		if (wcslen(label_)) {
+			label = label_;
 		}
 
 
@@ -580,6 +586,12 @@ void CAudioSessionsMixerCDlg::OnTimer(UINT_PTR nIdEvent)
 				midiController.setAudioMeter(i, 0);
 			}
 		}
+
+		// In case we've just re-connected the device,
+		// make sure to re-set all its info.
+		if (!midiController.slidersUpdatedSinceConnected) {
+			updateEverythingFromOS();
+		}
 	}
 }
 
@@ -590,6 +602,10 @@ void CAudioSessionsMixerCDlg::updateSessionsFromManager()
 
 	// Get the current list of sessions.
 	CHECK_HR(hr = pSessionManager->GetSessionEnumerator(&pSessionList));
+	if (pSessionList == nullptr) {
+		wprintf(L"ehhhhhhh?\n");
+		return;
+	}
 
 	// Get the session count.
 	int sessionCount = 0;

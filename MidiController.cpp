@@ -69,12 +69,28 @@ void OnMidiin(double timeStamp, std::vector<unsigned char>* message, void* userD
 }
 
 MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : eventReceiver(eventReceiver_) {
+	ensureConnected();
+}
+
+void MidiController::ensureConnected() {
+
+	// Rate limit our connection
+	auto now = std::chrono::steady_clock::now();
+	std::chrono::seconds duration = std::chrono::duration_cast<std::chrono::seconds>(now - lastConnectionAttempt);
+	if (duration.count() < 1.0) {
+		TRACE("NOPE %f", duration.count());
+		return; // Don't over poll
+	}
+	lastConnectionAttempt = now;
+	TRACE("yes %f", duration.count());
+
 	// Make sure the first calls aren't cached.
 	for (int i = 0; i < SLIDER_COUNT; ++i) {
 		previousLabels[i] = L"nope...";
 		previousPeaks[i] = -1;
 		previousSliderPositions[i] = -1;
 	}
+	slidersUpdatedSinceConnected = false;
 
 	// RtMidiIn constructor
 	try {
@@ -100,7 +116,13 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 		TRACE("  Input Port #%d: %s\n", i + 1, portName.c_str());
 		if (portName == "X-Touch-Ext 0") {
 			TRACE("    using this one.\n");
-			midiin->openPort(i, portName);
+			try {
+				midiin->openPort(i, portName);
+			}
+			catch (RtMidiError& error) {
+				TRACE("midiin port open error: %s", error.getMessage().c_str());
+
+			}
 			//break;
 		}
 	}
@@ -132,7 +154,7 @@ MidiController::MidiController(IMidiControllerEventReceiver* eventReceiver_) : e
 				midiout->openPort(i, portName);
 			}
 			catch (RtMidiError& error) {
-				TRACE("midiout error: %s", error.getMessage().c_str());
+				TRACE("midiout port open error: %s", error.getMessage().c_str());
 				break;
 			}
 			//break;
@@ -175,9 +197,11 @@ void MidiController::setSliderPos(int sliderIndex, float volume) {
 	};
 	try {
 		midiout->sendMessage(&message);
+		slidersUpdatedSinceConnected = true;
 	}
 	catch (RtMidiError& error) {
 		TRACE("midiout error: %s\n", error.getMessage().c_str());
+		ensureConnected();
 	}
 }
 
@@ -221,6 +245,7 @@ void MidiController::sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgrou
 	}
 	catch (RtMidiError& error) {
 		TRACE("midiout error: %s\n", error.getMessage().c_str());
+		ensureConnected();
 	}
 }
 
@@ -229,7 +254,6 @@ void MidiController::setLabel(int sliderIndex, const CString& text_) {
 		return;
 	}
 	previousLabels[sliderIndex] = text_;
-
 
 	CString text = text_.Left(2 * DISPLAY_WD);
 	if (text != "") {
@@ -286,10 +310,16 @@ void MidiController::setAudioMeter(int sliderIndex, float peak) {
 		unsigned char(90 + sliderIndex),
 		ledVal
 	};
+
+	if (!midiout->isPortOpen() || !midiin->isPortOpen()) {
+		ensureConnected();
+	}
+
 	try {
 		midiout->sendMessage(&message);
 	}
 	catch (RtMidiError& error) {
+		ensureConnected();
 		TRACE("midiout error: %s\n", error.getMessage().c_str());
 	}
 }

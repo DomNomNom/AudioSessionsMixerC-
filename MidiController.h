@@ -3,6 +3,7 @@
 #include "pch.h"
 #include <memory>
 #include "RtMidi.h"
+#include <chrono>
 
 #define SLIDER_COUNT 8
 
@@ -41,8 +42,11 @@ public: // should be private but I couldn't figure out how to properly do it. ma
 	IMidiControllerEventReceiver* eventReceiver;  // Non-owned. Expected to outlive this object.
 	std::unique_ptr<RtMidiOut> midiout;
 
+	bool slidersUpdatedSinceConnected; // public read, private write
+
 private:
 	std::unique_ptr<RtMidiIn> midiin;
+	void ensureConnected();
 
 	void sendDisplaySysEx(int sliderIndex, RGB3 color, bool backgroundTop, bool backgroundBot, const CString& txtTop, const CString& txtBot);
 
@@ -51,4 +55,5 @@ private:
 	float previousPeaks[SLIDER_COUNT];
 	float previousSliderPositions[SLIDER_COUNT];
 
+	std::chrono::time_point<std::chrono::steady_clock> lastConnectionAttempt;
 };
